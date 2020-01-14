@@ -90,7 +90,7 @@ FROM (
 writing to: `gcp-cset-projects:wos_dim_article_linking.usable_wos_doi_rows_20200109`
 
 We now have 21,353,190 rows. In checking for uniqueness of ids here, however, I discovered that one WOS ID can
-also correspond to multiple DOIs!
+also correspond to multiple DOIs! James pointed out that these seem to be revisions of the same base paper.
 
 `select * from wos_dim_article_linking.usable_wos_doi_rows_20200109 where id="WOS:000500997800023"`
 
@@ -162,28 +162,102 @@ writing to:
 With 17,196,623 rows.
 
 7.) We now need to make a decision about handling multiple versions of the same paper with different DOIs as
-noted in (4). For now, as I don't expect this to make a big difference (there are:
+noted in (4), and WOS IDs that correspond to multiple dimensions IDs. For now, as I don't expect this to make
+a big difference (there are:
  
 - 17,196,573 unique WOS IDs
 - 17,196,578 unique Dimensions IDs
 - 17,196,578 unique DOIs
 - 17,196,623 rows
 
-in (6)), I will leave all versions in. 
+in (6). But just to make the eval set as possible, let's clean these up as well, as well as the 134218 (!) records
+where year doesn't match (these seem to be due, at least in part, to differences between publication date in 
+an English-speaking and a foreign-language journal):
+
+```
+select * from wos_dim_article_linking.doi_match_wos_dimensions_20200109 where (wos_year = ds_year) and (wos_id in (
+  select wos_id from (
+    select count(ds_id) as num_ds_ids, wos_id from wos_dim_article_linking.doi_match_wos_dimensions_20200109 group by wos_id
+  ) where num_ds_ids = 1
+))
+```
+
+writing to: `wos_dim_article_linking.filtered_doi_match`
+
+and leaving us with 17,062,190 rows.
+
+8.) Oops I forgot authors. Let's construct tables of last names per id and then add those last names to our
+match table.
+
+```
+select
+  id, array_agg(last_name IGNORE NULLS) as author_last_names
+from gcp_cset_clarivate.wos_summary_names_latest
+where role="author"
+group by id
+```
+
+writing to `wos_dim_article_linking.wos_author_last_names_2020013`
+
+```
+select
+  id,
+  ARRAY(select last_name from UNNEST(author_affiliations)) as last_name
+from gcp_cset_digital_science.dimensions_publications
+```
+
+writing to `wos_dim_article_linking.dimensions_author_last_names_2020013`
+
+and finally
+
+```
+SELECT
+  j.doi,
+  j.ds_id,
+  j.wos_id,
+  j.ds_year,
+  j.wos_year,
+  j.ds_title,
+  j.wos_title,
+  j.ds_abstract,
+  j.wos_abstract,
+  d.last_name as ds_last_names,
+  w.author_last_names as wos_last_names
+FROM
+  wos_dim_article_linking.filtered_doi_match j
+INNER JOIN
+  wos_dim_article_linking.wos_author_last_names_2020013 w
+ON
+  j.wos_id = w.id
+INNER JOIN
+  wos_dim_article_linking.dimensions_author_last_names_2020013 d
+ON
+  j.ds_id = d.id
+```
+
+writing to `wos_dim_article_linking.filtered_doi_match_with_authors`
 
 8.) Let's do some basic preprocessing now, to:
 
 - strip punctuation
 - downcase
-- normalize whitespace (convert all spaces to ' ')
+- normalize whitespace (convert all spaces and newlines to ' ')
 - nfkc text normalization
 
 Using `utils/clean_corpus.py`
 
 And put the output in :
 
-`wos_dim_article_linking.doi_match_wos_dimensions_20200109`
+`wos_dim_article_linking.clean_filtered_doi_match`
 
 Other possible preprocessing can come in linkage method-specific code.
+
+Some things to note:
+
+- number of empty titles in DS:
+- number of empty titles in WOS:
+- number of empty abstracts in DS:
+- number of empty abstracts in WOS:
+- number of mismatched author lists:
 
 We'll resume this thrilling narrative in `partitioning.md`. :)
