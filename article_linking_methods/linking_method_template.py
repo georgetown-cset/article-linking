@@ -17,7 +17,7 @@ class ExactMatchArticleLinker(beam.DoFn):
             dl_cmd = f"gsutil cp {self.comparison_map_location} ."
             proc = Popen(dl_cmd, shell=True, stdout=PIPE, stderr=PIPE)
             output, _ = proc.communicate()
-            self.comparison_map = pickle.load(open(self.comparison_map.split("/")[-1]))
+            self.comparison_map = pickle.load(open(self.comparison_map_location.split("/")[-1], mode="rb"))
 
     def get_exact_matches(self, record, fields):
         id_to_num_matches = {}
