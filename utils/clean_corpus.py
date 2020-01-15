@@ -22,14 +22,12 @@ class SimpleScrub(beam.DoFn):
         return (" ".join(clean_string_parts)).strip().lower()
 
     def process(self, record):
-        print(record)
         for field in self.fields:
             value = record[field]
             if type(value) == list:
                 record[field] = [self.clean(v) for v in value]
             else:
                 record[field] = self.clean(value)
-        print(record)
         yield record
 
 

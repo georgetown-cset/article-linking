@@ -203,10 +203,10 @@ writing to `wos_dim_article_linking.wos_author_last_names_2020013`
 select
   id,
   ARRAY(select last_name from UNNEST(author_affiliations)) as last_name
-from gcp_cset_digital_science.dimensions_publications
+from gcp_cset_digital_science.dimensions_publications_latest
 ```
 
-writing to `wos_dim_article_linking.dimensions_author_last_names_2020013`
+writing to `wos_dim_article_linking.dimensions_author_last_names_20200113`
 
 and finally
 
@@ -230,7 +230,7 @@ INNER JOIN
 ON
   j.wos_id = w.id
 INNER JOIN
-  wos_dim_article_linking.dimensions_author_last_names_2020013 d
+  wos_dim_article_linking.dimensions_author_last_names_20200113 d
 ON
   j.ds_id = d.id
 ```

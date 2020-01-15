@@ -1,0 +1,13 @@
+{"fields": [
+  {"name": "doi", "type": "STRING", "mode": "REQUIRED"},
+  {"name": "ds_id", "type": "STRING", "mode": "REQUIRED"},
+  {"name": "wos_id", "type": "STRING", "mode": "REQUIRED"},
+  {"name": "ds_year", "type": "INTEGER", "mode": "NULLABLE"},
+  {"name": "wos_year", "type": "INTEGER", "mode": "NULLABLE"},
+  {"name": "ds_title", "type": "STRING", "mode": "NULLABLE"},
+  {"name": "wos_title", "type": "STRING", "mode": "NULLABLE"},
+  {"name": "ds_abstract", "type": "STRING", "mode": "NULLABLE"},
+  {"name": "wos_abstract", "type": "STRING", "mode": "NULLABLE"},
+  {"name": "ds_last_names", "type": "STRING", "mode": "REPEATED"},
+  {"name": "wos_last_names", "type": "STRING", "mode": "REPEATED"}
+]}
