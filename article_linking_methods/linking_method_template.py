@@ -12,18 +12,24 @@ class ExactMatchArticleLinker(beam.DoFn):
         self.comparison_map_location = comparison_map_location
         self.comparison_map = None
 
+    @staticmethod
+    def read_pickle(location):
+        dl_cmd = f"gsutil cp {location} ."
+        proc = Popen(dl_cmd, shell=True, stdout=PIPE, stderr=PIPE)
+        output, _ = proc.communicate()
+        return pickle.load(open(location.split("/")[-1], mode="rb"))
+
     def start_bundle(self):
         if self.comparison_map is None:
-            dl_cmd = f"gsutil cp {self.comparison_map_location} ."
-            proc = Popen(dl_cmd, shell=True, stdout=PIPE, stderr=PIPE)
-            output, _ = proc.communicate()
-            self.comparison_map = pickle.load(open(self.comparison_map_location.split("/")[-1], mode="rb"))
+            self.comparison_map = self.read_pickle(self.comparison_map_location)
 
     def get_exact_matches(self, record, fields):
         id_to_num_matches = {}
         for field in fields:
             rf = record["ds_"+field]
-            potential_matches = [] if rf not in self.comparison_map["wos_"+field] else self.comparison_map["wos_"+field][rf]
+            potential_matches = []
+            if (rf in self.comparison_map["wos_"+field]) and (len(self.comparison_map["wos_"+field].strip()) > 0):
+                potential_matches = self.comparison_map["wos_"+field][rf]
             for potential_match in potential_matches:
                 if potential_match not in id_to_num_matches:
                     id_to_num_matches[potential_match] = 0
@@ -31,11 +37,6 @@ class ExactMatchArticleLinker(beam.DoFn):
         # return records where all fields were matched
         return [{"ds_id": record["ds_id"], "wos_id": match} for match in id_to_num_matches if
                 id_to_num_matches[match] == len(fields)]
-
-    def get_one_match(self, record, field):
-        rf = record["ds_"+field]
-        if (rf in self.comparison_map["wos_"+field]) and (len(self.comparison_map["wos_"+field].strip()) > 0):
-            return self.comparison_map["wos_"+field][rf]
 
     def process(self, record):
         for match in self.get_exact_matches(record, ["title", "abstract"]):
