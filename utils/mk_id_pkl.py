@@ -15,7 +15,8 @@ if __name__ == "__main__":
             js = json.loads(line)
             id_map[js["wos_id"]] = {
                 "wos_title": js["wos_title"],
-                "wos_abstract": js["wos_abstract"]
+                "wos_abstract": js["wos_abstract"],
+                "wos_year": js["wos_year"]
             }
 
     pickle.dump(id_map, open(args.output_pkl_file, mode="wb"))

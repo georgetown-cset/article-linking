@@ -1,5 +1,7 @@
 import logging
+import time
 import pickle
+import os
 import apache_beam as beam
 from subprocess import Popen, PIPE
 
@@ -13,11 +15,25 @@ class ExactMatchArticleLinker(beam.DoFn):
         self.comparison_map = None
 
     @staticmethod
-    def read_pickle(location):
-        dl_cmd = f"gsutil cp {location} ."
-        proc = Popen(dl_cmd, shell=True, stdout=PIPE, stderr=PIPE)
-        output, _ = proc.communicate()
-        return pickle.load(open(location.split("/")[-1], mode="rb"))
+    def read_pickle(location, num_workers=1):
+        loc_basename = location.split("/")[-1]
+        loc_files = [fi for fi in os.listdir(os.getcwd()) if fi.startswith(loc_basename+"-") and fi.endswith(".pkl")]
+        if len(loc_files) < num_workers:
+            loc_path = f"{os.getcwd()}/{loc_basename}-{os.getpid()}"
+            dl_cmd = f"gsutil cp {location} {loc_path}"
+            proc = Popen(dl_cmd, shell=True, stdout=PIPE, stderr=PIPE)
+            output, _ = proc.communicate()
+            return pickle.load(open(loc_path, mode="rb"))
+        else:
+            pkl = None
+            max_delay = 5
+            while max_delay > 0:
+                try:
+                    pkl = pickle.load(open(os.path.join(os.getcwd(), loc_files[0]), mode="rb"))
+                except pickle.UnpicklingError:
+                    max_delay -= 1
+                    time.sleep(1)
+            return pkl
 
     def start_bundle(self):
         if self.comparison_map is None:
@@ -28,12 +44,13 @@ class ExactMatchArticleLinker(beam.DoFn):
         for field in fields:
             rf = record["ds_"+field]
             potential_matches = []
-            if (rf in self.comparison_map["wos_"+field]) and (len(self.comparison_map["wos_"+field].strip()) > 0):
+            if rf in self.comparison_map["wos_"+field]:
                 potential_matches = self.comparison_map["wos_"+field][rf]
             for potential_match in potential_matches:
-                if potential_match not in id_to_num_matches:
-                    id_to_num_matches[potential_match] = 0
-                id_to_num_matches[potential_match] += 1
+                if len(potential_match.strip()) > 0:
+                    if potential_match not in id_to_num_matches:
+                        id_to_num_matches[potential_match] = 0
+                    id_to_num_matches[potential_match] += 1
         # return records where all fields were matched
         return [{"ds_id": record["ds_id"], "wos_id": match} for match in id_to_num_matches if
                 id_to_num_matches[match] == len(fields)]

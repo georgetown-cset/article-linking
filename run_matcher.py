@@ -1,22 +1,24 @@
 import argparse
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions
-from article_linking_methods.linking_method_template import ExactMatchArticleLinker
 from article_linking_methods.full_comparison import FullComparisonLinkerTitleFilter
 
 
 def run(input_dataset, output_dataset, pipeline_args):
-    bq_input_query = f"SELECT ds_id, ds_title, ds_abstract FROM [{input_dataset}]"
+    bq_input_query = f"SELECT ds_id, ds_year, ds_title, ds_abstract FROM [{input_dataset}]"
     output_schema = {"fields": [
         {"name": "ds_id", "type": "STRING", "mode": "REQUIRED"},
         {"name": "wos_id", "type": "STRING", "mode": "REQUIRED"},
     ]}
     with beam.Pipeline(options=PipelineOptions(pipeline_args)) as p:
-        (p | "Read from BQ" >> beam.io.Read(beam.io.BigQuerySource(query=bq_input_query))
-            #| "Do Exact Match" >> beam.ParDo(ExactMatchArticleLinker("gs://jtm-tmp/wos_2017.pkl"))
-            | "Do Exact Match With Backoff" >> beam.ParDo(FullComparisonLinkerTitleFilter("gs://jtm-tmp/wos_2017.pkl",
-                                                                                          "gs://jtm-tmp/wos_2017_ids.pkl"))
-            | "Write to BQ" >> beam.io.WriteToBigQuery(output_dataset,
+        input = p | "Read from BQ" >> beam.io.Read(beam.io.BigQuerySource(query=bq_input_query))
+        for threshold_int in range(11):
+            threshold = threshold_int/10
+            (input | "Do Exact Match With Backoff "+str(threshold) >>
+                        beam.ParDo(FullComparisonLinkerTitleFilter("gs://jtm-tmp/wos_5K.pkl",
+                                                                    "gs://jtm-tmp/wos_5K_ids.pkl",
+                                                                    threshold))
+                    | "Write to BQ "+str(threshold) >> beam.io.WriteToBigQuery(output_dataset+str(threshold_int),
                                                        write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
                                                        schema=output_schema))
 

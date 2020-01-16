@@ -5,18 +5,22 @@ from .linking_method_template import ExactMatchArticleLinker
 class FullComparisonLinkerTitleFilter(ExactMatchArticleLinker):
     log = logging.getLogger(__name__)
 
-    def __init__(self, comparison_map_location, id_map_location):
+    def __init__(self, comparison_map_location, id_map_location, threshold):
         super().__init__(comparison_map_location)
         self.id_map = None
         self.id_map_location = id_map_location
+        self.threshold = threshold
 
     def start_bundle(self):
         super().start_bundle()
         if self.id_map is None:
-            self.id_map = self.read_pickle(self.id_map_location)
+            self.id_map = self.read_pickle(self.id_map_location, num_workers=2)
 
     @staticmethod
     def calculate_pct_overlap(txt1, txt2):
+        if (len(txt1.strip()) == 0) and (len(txt2.strip()) == 0):
+            # questionably the right value
+            return 1
         words_to_counts = {}
         for txt in [txt1, txt2]:
             for word in txt.strip().split():
@@ -40,20 +44,22 @@ class FullComparisonLinkerTitleFilter(ExactMatchArticleLinker):
         return max_sim, max_id
 
     def process(self, record):
-        matches = self.get_exact_matches(record, ["title", "abstract"])
+        matches = self.get_exact_matches(record, ["abstract", "title"])
         if len(matches) > 0:
             for match in matches:
                 yield match
         else:
             title_matches = self.get_exact_matches(record, ["title"])
+            max_sim, max_id = -1, None
             if len(title_matches) > 0:
                 # try looking at just the same titles
-                max_sim, max_id = self.get_max_similarity(record, title_matches, ["title", "abstract"])
+                wos_ids = [m["wos_id"] for m in title_matches]
+                max_sim, max_id = self.get_max_similarity(record, wos_ids, ["abstract"])
             else:
                 # back off to n^2 comparison
                 max_sim, max_id = self.get_max_similarity(record, self.id_map.keys(), ["title", "abstract"])
             # pass this in as an arg to init and (eventually) sweep the value
-            if max_sim > 0.9:
+            if max_sim > self.threshold:
                 yield {"ds_id": record["ds_id"], "wos_id": max_id}
 
 
