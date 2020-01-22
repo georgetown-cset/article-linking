@@ -1,13 +1,13 @@
 Picking up from 0_data_preparation, this document describes our experimental partitions.
 
-`sample_5K` was a quick sample of 5K DOI-matched articles. With commit, got:
+`sample_5K` was a quick sample of 5K DOI-matched articles. With commit 85587ce29149ee4c17b2b96652513f84a25a8653, got:
 
 system_name,precision,recall,f1
 wos_dim_article_linking.50K_plus_50K_eval_titlefilter4,0.9746122731060837,0.95896,0.9667227839551599
 
 --
 
-`sample_100K` was a larger sample of 100K DOI-matched articles. With commit, got
+`sample_100K` was a larger sample of 100K DOI-matched articles. With commit 85587ce29149ee4c17b2b96652513f84a25a8653, got
 
 system_name,precision,recall,f1
 wos_dim_article_linking.100K_titlefilter3,0.996761937223687,0.99428,0.9955194216799915
@@ -71,4 +71,11 @@ writing to: `wos_dim_article_linking.50K_plus_50K_eval_set`
 Our script pickles WOS and then tries to match it against DS. So we'll pickle only the `50K_nontrivial_sample`
 ids, match against the full `50K_plus_50K_eval_set`, and calculate performance wrt the `50K_nontrivial_sample`
 matches.
+
+With commit 35e927cf5abf57d4c03079653cae364b5d7fce66 , even this set gets
+
+system_name,precision,recall,f1
+wos_dim_article_linking.50K_plus_50K_eval_titlefilter4,0.9746122731060837,0.95896,0.9667227839551599
+
+
 
