@@ -57,7 +57,7 @@ class FullComparisonLinkerTitleFilter(ExactMatchArticleLinker):
                 max_sim, max_id = self.get_max_similarity(record, wos_ids, ["abstract"])
             else:
                 # back off to n^2 comparison
-                max_sim, max_id = self.get_max_similarity(record, self.id_map.keys(), ["title", "abstract"])
+                max_sim, max_id = self.get_max_similarity(record, (k for k in self.id_map), ["title", "abstract"])
             # pass this in as an arg to init and (eventually) sweep the value
             if max_sim > self.threshold:
                 yield {"ds_id": record["ds_id"], "wos_id": max_id}

@@ -12,11 +12,11 @@ def run(input_dataset, output_dataset, pipeline_args):
     ]}
     with beam.Pipeline(options=PipelineOptions(pipeline_args)) as p:
         input = p | "Read from BQ" >> beam.io.Read(beam.io.BigQuerySource(query=bq_input_query))
-        for threshold_int in range(11):
+        for threshold_int in [4]:
             threshold = threshold_int/10
             (input | "Do Exact Match With Backoff "+str(threshold) >>
-                        beam.ParDo(FullComparisonLinkerTitleFilter("gs://jtm-tmp/wos_5K.pkl",
-                                                                    "gs://jtm-tmp/wos_5K_ids.pkl",
+                        beam.ParDo(FullComparisonLinkerTitleFilter("gs://jtm-tmp/wos_50K.pkl",
+                                                                    "gs://jtm-tmp/wos_50K_ids.pkl",
                                                                     threshold))
                     | "Write to BQ "+str(threshold) >> beam.io.WriteToBigQuery(output_dataset+str(threshold_int),
                                                        write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,

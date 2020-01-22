@@ -59,19 +59,3 @@ class ExactMatchArticleLinker(beam.DoFn):
         for match in self.get_exact_matches(record, ["title", "abstract"]):
             yield match
 
-# TODO:
-# 1.) run this pipeline successfully
-# 2.) implement in-memory precision/recall/f1 calculator and calculate performance
-# 3.) implement v2 with n^2 comparison on the remainder, partitioned first on title exact match
-
-
-#    @abstractmethod
-#    @staticmethod
-#    def compare(article1: Dict, article2: Dict) -> bool:
-#        '''
-#        Compares Article1 to Article2
-#        :param article1: Article to compare to article 2
-#        :param article2: Article to compare to article 1
-#        :return: True if this metric thinks article1 and article2 are the same, False otherwise
-#        '''
-#        pass

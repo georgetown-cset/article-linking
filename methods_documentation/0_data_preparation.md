@@ -9,15 +9,16 @@ group by identifier_value
 order by num_wos_ids desc
 ```
 
-[10.1097/01.PRS.0000141485.83476.89](http://apps.webofknowledge.com/Search.do?product=WOS&SID=7AesKAwMb5jwfX4DSGq&search_mode=GeneralSearch&prID=3b743f6d-2e2c-4a94-8300-e529a1680c27)
-
-Maybe it's some combination of page range and publication??
-
-[10.1111/j.1365-2435.2007.01258.x](http://apps.webofknowledge.com/Search.do?product=WOS&SID=7AesKAwMb5jwfX4DSGq&search_mode=GeneralSearch&prID=e3349b8b-a5f6-4187-b7f3-8cf5c2dd62d6)
-
 writing to: `gcp-cset-projects:wos_dim_article_linking.wos_id_counts_by_doi_20200108`
 
 with 24,406,130 rows
+
+Two examples (direct linking doesn't work but you can search http://apps.webofknowledge.com/ ). Maybe it's some
+combination of page range and publication??
+
+10.1097/01.PRS.0000141485.83476.89
+
+10.1111/j.1365-2435.2007.01258.x
 
 2.) Grab the IDs with only one DOI:
 
