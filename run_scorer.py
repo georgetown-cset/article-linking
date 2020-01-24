@@ -34,18 +34,32 @@ class ArticleLinkageEvaluator:
             results.add(self.mk_key(result))
         return results
 
+    def extract_key_info(self, key, errors):
+        key_map = {}
+        if len(errors) == 0:
+            return key_map
+        prefix = key.split("_")[0]+"_"
+        formatted_errors = ",".join(set([f"'{e}'" for e in errors]))
+        query = f"SELECT * from `{self.full_table}` where {key} in ({formatted_errors})"
+        for result in self.client.query(query):
+            key_map[result.get(key)] = {k: result.get(k) for k in result.keys() if k.startswith(prefix)}
+        return key_map
+
     def write_errors(self, errors, error_file):
         out = None
         for error_type in self.error_types:
-            formatted_errors = ",".join([f"'{e}'" for e in errors[error_type]])
-            query = f"SELECT * from `{self.full_table}` where {self.from_key} in ({formatted_errors})"
-            for result in self.client.query(query):
-                result["error_type"] = error_type
+            from_map = self.extract_key_info(self.from_key, [self.unmake_key(k)[self.from_key] for k in errors[error_type]])
+            to_map = self.extract_key_info(self.to_key, [self.unmake_key(k)[self.to_key] for k in errors[error_type]])
+            for error in errors[error_type]:
+                error_keymap = self.unmake_key(error)
+                row = {"error_type" : error_type}
+                row.update(from_map[error_keymap[self.from_key]])
+                row.update(to_map[error_keymap[self.to_key]])
                 # I'm sure there's a prettier way to do this, but I'm just trying to get the column names
                 if out is None:
-                    out = csv.DictWriter(open(error_file, mode="w"), fieldnames=list(result.keys()))
+                    out = csv.DictWriter(open(error_file, mode="w"), fieldnames=list(row.keys()))
                     out.writeheader()
-                out.writerow(result)
+                out.writerow(row)
 
     def get_scores(self, ak, results, system_name):
         # for now, this relies on the happy assumption that we can actually fit the entire set of results
@@ -64,8 +78,8 @@ class ArticleLinkageEvaluator:
                 "f1": f1
             },
             "errors": {
-                "false_alarm": [self.unmake_key(r)[self.from_key] for r in results - ak],
-                "miss": [self.unmake_key(r)[self.from_key] for r in ak - intersection]
+                "false_alarm": results - ak,
+                "miss": ak - intersection
             }
         }
 
