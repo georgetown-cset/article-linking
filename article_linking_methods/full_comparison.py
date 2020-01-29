@@ -78,6 +78,7 @@ class FullComparisonLinkerTitleFilter(beam.DoFn):
         global_max, max_id = self.empty, None
         last_empty_id = None
         for cmp_id in comparison_ids:
+            # use this variable to prevent ourselves from matching only on year and authors
             matched_title_or_abstract = False
             cmp_rec = self.id_map[cmp_id]
             similarities = []

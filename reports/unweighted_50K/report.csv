@@ -1,0 +1,5 @@
+system_name,precision,recall,f1
+article_linking_experiment_outputs.50K_3,0.6387927720107651,0.9969,0.778645629930485
+article_linking_experiment_outputs.50K_4,0.905972323379461,0.99512,0.948455966450629
+article_linking_experiment_outputs.50K_5,0.9813011684285828,0.98766,0.9844703161755911
+article_linking_experiment_outputs.50K_6,0.9967653999511759,0.97994,0.988281092420025

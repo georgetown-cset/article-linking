@@ -23,8 +23,11 @@ class SimpleScrub(beam.DoFn):
                                                  strip_multiple_whitespaces])
         return (" ".join(clean_string_parts)).strip().lower()
 
-    def process(self, record):
+    def process(self, record_str):
+        record = json.loads(record_str)
         for field in self.fields:
+            if field not in record:
+                continue
             value = record[field]
             if type(value) == list:
                 record[field] = [self.clean(v) for v in value]
@@ -35,15 +38,17 @@ class SimpleScrub(beam.DoFn):
 
 def run_pipeline(input_table, output_table, output_schema, pipeline_args):
     #fields_to_clean = ["ds_title", "wos_title", "ds_abstract", "wos_abstract", "ds_last_names", "wos_last_names"]
-    #fields_to_clean = ["title", "abstract"]
-    fields_to_clean = ["OriginalTitle"]
-    bq_input_query = f"SELECT * FROM [{input_table}]"
+    fields_to_clean = ["title", "abstract"]
+    #fields_to_clean = ["OriginalTitle"]
+    #bq_input_query = f"SELECT * FROM [{input_table}]"
     with beam.Pipeline(options=PipelineOptions(pipeline_args)) as p:
-        (p | "Read from BQ" >> beam.io.Read(beam.io.BigQuerySource(query=bq_input_query, flatten_results=False))
+        #(p | "Read from BQ" >> beam.io.Read(beam.io.BigQuerySource(query=bq_input_query, flatten_results=False))
+        (p | "Read from Text" >> beam.io.ReadFromText(input_table)
             | "Scrub Text" >> beam.ParDo(SimpleScrub(fields_to_clean))
-            | "Write to BQ" >> beam.io.WriteToBigQuery(output_table,
-                                                       write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
-                                                       schema=output_schema))
+            | "Write to Text" >> beam.io.WriteToText(output_table))
+#            | "Write to BQ" >> beam.io.WriteToBigQuery(output_table,
+#                                                       write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+#                                                       schema=output_schema))
 
 
 if __name__ == "__main__":
