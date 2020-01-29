@@ -10,13 +10,14 @@ select distinct(PaperID) from `gcp-cset-projects.gcp_cset_mag.Papers` where doct
 
 ```
 create or replace table `gcp-cset-projects.dim_mag_article_linking.mag_ids_with_doi` as
-SELECT
+select * except(doi1) from (SELECT
   COUNT(PaperID) AS num_mag_ids,
   doi
 FROM
   `gcp-cset-projects.gcp_cset_mag.Papers` where doctype != 'Dataset' AND doctype != 'Patent'
 GROUP BY
-  doi
+  doi) dois inner join (select paperid, doi as doi1 from `gcp-cset-projects.gcp_cset_mag.Papers`) as ids
+  on dois.doi = ids.doi1
 ```
 Writing 84,077,577 records to `gcp-cset-projects:dim_mag_article_linking.usable_mag_ids_with_doi`
 
@@ -25,7 +26,7 @@ Writing 84,077,577 records to `gcp-cset-projects:dim_mag_article_linking.usable_
 ```
 create or replace table `gcp-cset-projects.dim_mag_article_linking.usable_mag_ids_with_doi` as
 select
-  doi from `gcp-cset-projects.dim_mag_article_linking.mag_ids_with_doi`
+  doi, paperid from `gcp-cset-projects.dim_mag_article_linking.mag_ids_with_doi`
 where  doi in
   (
     select doi from  `gcp-cset-projects.dim_mag_article_linking.mag_ids_with_doi` where num_mag_ids = 1
