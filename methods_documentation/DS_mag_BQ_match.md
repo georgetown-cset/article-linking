@@ -2,7 +2,7 @@
 1.) Get MAG IDs
 ```
 create or replace table `gcp-cset-projects.dim_mag_article_linking.mag_id` as
-select distinct(id) from gcp_cset_clarivate.wos_dynamic_identifiers_latest
+select distinct(PaperID) from `gcp-cset-projects.gcp_cset_mag.Papers` where doctype != 'Dataset' AND doctype != 'Patent'
 ```
 # Writing 179,043,616 records to `dim_mag_article_linking.mag_id`
 
@@ -14,7 +14,7 @@ SELECT
   COUNT(PaperID) AS num_mag_ids,
   doi
 FROM
-  `gcp-cset-projects.gcp_cset_mag.Papers`
+  `gcp-cset-projects.gcp_cset_mag.Papers` where doctype != 'Dataset' AND doctype != 'Patent'
 GROUP BY
   doi
 ```
@@ -47,10 +47,7 @@ Writing 24438854 records to `wos_dim_article_linking.really_usable_wos_ids_with_
 3.) Get the abstracts:
 
 ```
-SELECT id, STRING_AGG(paragraph_text, "\n" ORDER BY CAST(paragraph_id AS INT64) ASC) as abstract
-       FROM gcp_cset_clarivate.wos_abstract_paragraphs_latest
-       WHERE abstract_id = "1"
-       GROUP BY id;
+create or replace table `gcp-cset-projects.dim_mag_article_linking.mag_abstracts` as SELECT paperid, norm_abstract as abstract FROM `gcp-cset-projects.gcp_cset_mag.PaperAbstracts` where paperid in (select paperid from `gcp-cset-projects.gcp_cset_mag.Papers` where doctype != 'Dataset' AND doctype != 'Patent')
 ```
 
 Writing 35625094 records to `wos_dim_article_linking.wos_abstract_paragraphs_20200127`
