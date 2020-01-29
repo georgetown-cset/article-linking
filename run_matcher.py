@@ -5,22 +5,26 @@ from article_linking_methods.full_comparison import FullComparisonLinkerTitleFil
 
 
 def run(input_dataset, output_dataset, pipeline_args):
-    bq_input_query = f"SELECT ds_id, ds_year, ds_title, ds_abstract FROM [{input_dataset}]"
-    output_schema = {"fields": [
-        {"name": "ds_id", "type": "STRING", "mode": "REQUIRED"},
-        {"name": "wos_id", "type": "STRING", "mode": "REQUIRED"},
-    ]}
+#    bq_input_query = f"SELECT ds_id, ds_year, ds_title, ds_abstract, ds_last_names FROM [{input_dataset}]"
+#    output_schema = {"fields": [
+#        {"name": "ds_id", "type": "STRING", "mode": "REQUIRED"},
+#        {"name": "wos_id", "type": "STRING", "mode": "REQUIRED"},
+#    ]}
     with beam.Pipeline(options=PipelineOptions(pipeline_args)) as p:
-        input = p | "Read from BQ" >> beam.io.Read(beam.io.BigQuerySource(query=bq_input_query))
-        for threshold_int in [4]:
+        #input = p | "Read from BQ" >> beam.io.Read(beam.io.BigQuerySource(query=bq_input_query))
+        input = p | "Read from GCS" >> beam.io.ReadFromText(input_dataset)
+        for threshold_int in [5, 7, 9]:
             threshold = threshold_int/10
             (input | "Do Exact Match With Backoff "+str(threshold) >>
-                        beam.ParDo(FullComparisonLinkerTitleFilter("gs://jtm-tmp/wos_50K.pkl",
-                                                                    "gs://jtm-tmp/wos_50K_ids.pkl",
+                        beam.ParDo(FullComparisonLinkerTitleFilter(#"gs://jtm-tmp/wos_5K.pkl",
+                                                                    "gs://jtm-tmp/wos_5K_ids.pkl",
                                                                     threshold))
-                    | "Write to BQ "+str(threshold) >> beam.io.WriteToBigQuery(output_dataset+str(threshold_int),
-                                                       write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
-                                                       schema=output_schema))
+
+#                    | "Write to BQ "+str(threshold) >> beam.io.WriteToBigQuery(output_dataset+str(threshold_int),
+#                                                       write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+#                                                       schema=output_schema))
+                    | "Write to GCS "+str(threshold) >> beam.io.WriteToText(output_dataset+str(threshold_int)))
+
 
 
 if __name__ == "__main__":

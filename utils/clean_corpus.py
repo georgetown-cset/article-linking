@@ -15,6 +15,8 @@ class SimpleScrub(beam.DoFn):
 
     @staticmethod
     def clean(text):
+        if text is None:
+            return None
         # consider stemming and removing stopwords later
         clean_string_parts = preprocess_string(text, [lambda x: unicodedata.normalize("NFKC", x), deaccent, strip_tags,
                                                  strip_punctuation, strip_numeric, strip_non_alphanum,
@@ -32,7 +34,9 @@ class SimpleScrub(beam.DoFn):
 
 
 def run_pipeline(input_table, output_table, output_schema, pipeline_args):
-    fields_to_clean = ["ds_title", "wos_title", "ds_abstract", "wos_abstract", "ds_last_names", "wos_last_names"]
+    #fields_to_clean = ["ds_title", "wos_title", "ds_abstract", "wos_abstract", "ds_last_names", "wos_last_names"]
+    #fields_to_clean = ["title", "abstract"]
+    fields_to_clean = ["OriginalTitle"]
     bq_input_query = f"SELECT * FROM [{input_table}]"
     with beam.Pipeline(options=PipelineOptions(pipeline_args)) as p:
         (p | "Read from BQ" >> beam.io.Read(beam.io.BigQuerySource(query=bq_input_query, flatten_results=False))
