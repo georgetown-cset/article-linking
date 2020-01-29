@@ -52,16 +52,16 @@ Writing 83,703,516 records to `gcp-cset-projects.dim_mag_article_linking.really_
 create or replace table `gcp-cset-projects.dim_mag_article_linking.mag_abstracts` as SELECT paperid, norm_abstract as abstract FROM `gcp-cset-projects.gcp_cset_mag.PaperAbstracts` where paperid in (select paperid from `gcp-cset-projects.gcp_cset_mag.Papers` where doctype != 'Dataset' AND doctype != 'Patent')
 ```
 
-Writing 35625094 records to `wos_dim_article_linking.wos_abstract_paragraphs_20200127`
+Writing 91,827,296 records to `gcp-cset-projects.dim_mag_article_linking.mag_abstracts`
 
 3.5) Get only the titles we care about:
 
 ```
 create or replace table `gcp-cset-projects.dim_mag_article_linking.mag_titles` as
-SELECT paperid,  title FROM `gcp-cset-projects.gcp_cset_mag.Papers` 
+SELECT paperid, papertitle as title FROM `gcp-cset-projects.gcp_cset_mag.Papers` where doctype != 'Dataset' AND doctype != 'Patent'
 ```
 
-writing XXX records to `gcp-cset-projects.dim_mag_article_linking.mag_titles` 
+writing 179,043,616 records to `gcp-cset-projects.dim_mag_article_linking.mag_titles` 
 
 3.75) There are not duplicated IDs in mag
 
@@ -91,7 +91,7 @@ ON
   ids.Paperid = d.Paperid
 ``` 
 
-Writing 49,097,597 records to `gcp-cset-projects.dim_mag_article_linking.mag_metadata`
+Writing 179,043,616 records to `gcp-cset-projects.dim_mag_article_linking.mag_metadata`
 
 5.) And normalize with our normalization script, into:
 
@@ -114,17 +114,17 @@ wos_dim_article_linking.cleaned_ds_20200127 d
 on (lower(m.doi) = lower(d.doi)) and (m.doi is not null)
 ``` 
 
-writing 179,043,616 rows to `gcp-cset-projects.dim_mag_article_linking.doi_matches`
+writing 77,371,700 rows to `gcp-cset-projects.dim_mag_article_linking.doi_matches`
 
 Rest (wos):
 
 ```
-create or replace table `gcp-cset-projects.dim_mag_article_linking.no_doi_match_wos` as
+create or replace table `gcp-cset-projects.dim_mag_article_linking.no_doi_match_mag` as
 select * from `gcp-cset-projects.dim_mag_article_linking.mag_metadata`
 where paperid not in (select mag_id from `gcp-cset-projects.dim_mag_article_linking.doi_matches`)
 ```
 
-writing 179,043,616 rows to `gcp-cset-projects.dim_mag_article_linking.no_doi_match_wos`
+writing 101,757,932 rows to `gcp-cset-projects.dim_mag_article_linking.no_doi_match_mag`
 
 Rest (dimensions):
 
@@ -134,7 +134,7 @@ select * from wos_dim_article_linking.cleaned_ds_20200127
 where id not in (select dim_id from `gcp-cset-projects.dim_mag_article_linking.doi_matches`)
 ```
 
-writing 83382940 rows to `gcp-cset-projects.dim_mag_article_linking.no_doi_match_ds`
+writing 30,077,122 rows to `gcp-cset-projects.dim_mag_article_linking.no_doi_match_ds`
 
 8.) Let's identify the set of papers that have year + title + abstract matches (title not none and abstract not none):
 
@@ -247,21 +247,20 @@ match. We'll now use our text similarity script.
 9.) Let's get the unmatched records:
 
 ```
-create or replace table `gcp-cset-projects.dim_mag_article_linking.unmatched_wos_ids` as
+create or replace table `gcp-cset-projects.dim_mag_article_linking.unmatched_mag_ids` as
 select * from `gcp-cset-projects.dim_mag_article_linking.mag_metadata` where
 (paperid not in (select mag_id from `gcp-cset-projects.dim_mag_article_linking.year_title_abstract_one_pairwise_match`)) and
 (paperid not in (select mag_id from `gcp-cset-projects.dim_mag_article_linking.doi_matches`))
 ```
-
-16,792,556 records in `wos_dim_article_links.unmatched_wos_ids`, of which roughly half (8,832,307) have null abstracts
-
-10.) Non-exact matching on title alone seems dangerous, even within year. We have some records like the three returned
-by
+Count number of missing abstracts in the unmatched MAG records
+```
+select count(*) from `gcp-cset-projects.dim_mag_article_linking.mag_metadata` where paperid in (select paperid from  `gcp-cset-projects.dim_mag_article_linking.unmatched_mag_ids`) and (abstract = ""  or abstract is null)
+```
+94,964,940 records in `wos_dim_article_links.unmatched_mag_ids`, of which roughly half (55,277,044) have null abstracts
 
 ```
-select * from wos_dim_article_links.unmatched_wos_ids
-where title="clinical characterisation of neurexin deletions and their role in neurodevelopmental disorders"
-``` 
+select * from (select count(title) as title_ct, paperid from `gcp-cset-projects.dim_mag_article_linking.unmatched_mag_ids` group by paperid) where title_ct > 1
+```
 
-that have no information in our metadata table other than their (identical) titles and years, and their (different) ids
+10.) In the unmatched MAG ids the titles are unique, Yay!
 
