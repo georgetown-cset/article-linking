@@ -241,7 +241,7 @@ and
 
 writing 6,792,992 rows to `gcp-cset-projects.dim_mag_article_linking.year_title_abstract_one_pairwise_match`
 
-At this point, we have successfully matched 6,792,992 + 77,371,700 = 84,164,692 ids, leaving 94,964,940/179,043,616 MAG IDS AND 23,284,130/107,441,845 remaining to
+At this point, we have successfully matched 6,792,992 + 77,371,700 = 84,164,692 ids, leaving 94,964,940/179,043,616 MAG IDs AND 23,284,130/107,441,845 DS IDs remaining to
 match. We'll now use our text similarity script.
 
 9.) Let's get the unmatched records:
