@@ -18,7 +18,7 @@ Writing 24517093 records to `wos_dim_article_linking.wos_ids_with_doi_20200127`
 
 ```
 select
-  * from wos_dim_article_linking.usable_wos_ids_with_doi_20200127 
+  * from wos_dim_article_linking.wos_ids_with_doi_20200127
 where identifier_value in
   (
     select identifier_value from wos_dim_article_linking.wos_ids_with_doi_20200127 where num_wos_ids = 1
