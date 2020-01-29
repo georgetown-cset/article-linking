@@ -1,31 +1,39 @@
-1.) `select distinct(id) from gcp_cset_clarivate.wos_dynamic_identifiers_latest`
 
-Writing 49096840 records to `wos_dim_article_linking.all_wos_ids_20200127`
+1.) Get MAG IDs
+```
+create or replace table `gcp-cset-projects.dim_mag_article_linking.mag_id` as
+select distinct(PaperID) from `gcp-cset-projects.gcp_cset_mag.Papers` where doctype != 'Dataset' AND doctype != 'Patent'
+```
+# Writing 179,043,616 records to `dim_mag_article_linking.mag_id`
 
-2.) Get the DOIs
+2.) Get the MAG DOIs
 
 ```
-select count(id) as num_wos_ids, identifier_value from
-    (select id, identifier_value from gcp_cset_clarivate.wos_dynamic_identifiers_latest where
-        (identifier_type="doi") and (identifier_value is not null))
-group by identifier_value
-order by num_wos_ids desc
+create or replace table `gcp-cset-projects.dim_mag_article_linking.mag_ids_with_doi` as
+select * except(doi1) from (SELECT
+  COUNT(PaperID) AS num_mag_ids,
+  doi
+FROM
+  `gcp-cset-projects.gcp_cset_mag.Papers` where doctype != 'Dataset' AND doctype != 'Patent'
+GROUP BY
+  doi) dois inner join (select paperid, doi as doi1 from `gcp-cset-projects.gcp_cset_mag.Papers`) as ids
+  on dois.doi = ids.doi1
 ```
-
-Writing 24517093 records to `wos_dim_article_linking.wos_ids_with_doi_20200127`
+Writing 84,077,577 records to `gcp-cset-projects:dim_mag_article_linking.usable_mag_ids_with_doi`
 
 2.5.) Filter out records that have more than one DOI.
 
 ```
+create or replace table `gcp-cset-projects.dim_mag_article_linking.usable_mag_ids_with_doi` as
 select
-  * from wos_dim_article_linking.wos_ids_with_doi_20200127
-where identifier_value in
+  doi, paperid from `gcp-cset-projects.dim_mag_article_linking.mag_ids_with_doi`
+where  doi in
   (
-    select identifier_value from wos_dim_article_linking.wos_ids_with_doi_20200127 where num_wos_ids = 1
+    select doi from  `gcp-cset-projects.dim_mag_article_linking.mag_ids_with_doi` where num_mag_ids = 1
   ) 
 ```
 
-Writing 24438854 records to `wos_dim_article_linking.usable_wos_ids_with_doi_20200127`
+Writing 83,720,552 records to `dim_mag_article_linking.usable_mag_ids_with_do`
 
 2.75) Filter out DOIs that have more than one WOS id:
 
@@ -40,10 +48,7 @@ Writing 24438854 records to `wos_dim_article_linking.really_usable_wos_ids_with_
 3.) Get the abstracts:
 
 ```
-SELECT id, STRING_AGG(paragraph_text, "\n" ORDER BY CAST(paragraph_id AS INT64) ASC) as abstract
-       FROM gcp_cset_clarivate.wos_abstract_paragraphs_latest
-       WHERE abstract_id = "1"
-       GROUP BY id;
+create or replace table `gcp-cset-projects.dim_mag_article_linking.mag_abstracts` as SELECT paperid, norm_abstract as abstract FROM `gcp-cset-projects.gcp_cset_mag.PaperAbstracts` where paperid in (select paperid from `gcp-cset-projects.gcp_cset_mag.Papers` where doctype != 'Dataset' AND doctype != 'Patent')
 ```
 
 Writing 35625094 records to `wos_dim_article_linking.wos_abstract_paragraphs_20200127`
