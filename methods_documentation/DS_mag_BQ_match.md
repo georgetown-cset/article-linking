@@ -58,7 +58,7 @@ Writing 91,827,296 records to `gcp-cset-projects.dim_mag_article_linking.mag_abs
 
 ```
 create or replace table `gcp-cset-projects.dim_mag_article_linking.mag_titles` as
-SELECT paperid, papertitle as title FROM `gcp-cset-projects.gcp_cset_mag.Papers` where doctype != 'Dataset' AND doctype != 'Patent'
+SELECT paperid, OriginalTitle as title FROM `gcp-cset-projects.gcp_cset_mag.PapersWithCleanTitles` where paperid in ( select paperid from `gcp-cset-projects.gcp_cset_mag.Papers` where doctype != 'Dataset' AND doctype != 'Patent')
 ```
 
 writing 179,043,616 records to `gcp-cset-projects.dim_mag_article_linking.mag_titles` 
@@ -151,7 +151,7 @@ on (CAST(m.year as int64) = d.year) and (m.year is not null) and
    (m.abstract = d.abstract) and (m.abstract is not null) and (m.abstract != "")
 ```
 
-writing 1,348,487 rows to `wos_dim_article_links.title_year_abstract_matches_20200128`
+writing 1,639,559 rows to `wos_dim_article_links.title_year_abstract_matches_20200128`
 
 Eeek. That's not a lot of matches. We can see why though:
 
@@ -165,7 +165,7 @@ returns 60,717,653 rows, while
 select count(paperid) from `gcp-cset-projects.dim_mag_article_linking.no_doi_match_mag` where (title is null) or (title = "")
 ```
 
-returns 0 rows.
+returns 16 rows.
 
 Let's also do a query that allows one of title, abstract, or year to not match. The query I want to do is:
 
@@ -179,7 +179,7 @@ on (CAST(m.year as int64) = d.year) and (m.year is not null) and
    (m.title = d.title) and (m.title is not null) and (m.title != "")
 ```  
 
-writing 8,448,711 rows to `wos_dim_article_links.year_title_pairwise_match_pre_filter`
+writing 13,612,875 rows to `wos_dim_article_links.year_title_pairwise_match_pre_filter`
 
 ```
 create or replace table `gcp-cset-projects.dim_mag_article_linking.year_abstract_match_pre_filter` as select m.paperid as mag_id, d.id as dim_id, d.doi as dim_doi, m.doi as mag_doi, CAST(m.year as int64) as year, m.title as title, m.abstract as abstract
@@ -214,7 +214,7 @@ union all
 (select * from `gcp-cset-projects.dim_mag_article_linking.title_abstract_match_pre_filter`) 
 ```
 
-writing 11,527,218 rows to `gcp-cset-projects.dim_mag_article_linking.year_title_abstract_one_pairwise_match_pre_filter`
+writing 16,939,518 rows to `gcp-cset-projects.dim_mag_article_linking.year_title_abstract_one_pairwise_match_pre_filter`
 
 The output numbers look nice, but in reality the pairs matched by the query above may contain ids that are present
 in other matches, inflating the count. So let's now filter those results to only mag and dimensions pairs where the
@@ -239,9 +239,9 @@ and
 ))
 ```
 
-writing 6,792,992 rows to `gcp-cset-projects.dim_mag_article_linking.year_title_abstract_one_pairwise_match`
+writing 8,085,169 rows to `gcp-cset-projects.dim_mag_article_linking.year_title_abstract_one_pairwise_match`
 
-At this point, we have successfully matched 6,792,992 + 77,371,700 = 84,164,692 ids, leaving 94,964,940/179,043,616 MAG IDs AND 23,284,130/107,441,845 DS IDs remaining to
+At this point, we have successfully matched 8,085,169 + 77,371,700 = 85,456,869 ids, leaving 93,586,747/179,043,616 MAG IDs AND 21,984,976/107,441,845 DS IDs remaining to
 match. We'll now use our text similarity script.
 
 9.) Let's get the unmatched records:
@@ -256,7 +256,7 @@ Count number of missing abstracts in the unmatched MAG records
 ```
 select count(*) from `gcp-cset-projects.dim_mag_article_linking.mag_metadata` where paperid in (select paperid from  `gcp-cset-projects.dim_mag_article_linking.unmatched_mag_ids`) and (abstract = ""  or abstract is null)
 ```
-94,964,940 records in `wos_dim_article_links.unmatched_mag_ids`, of which roughly half (55,277,044) have null abstracts
+93,672,763 records in `wos_dim_article_links.unmatched_mag_ids`, of which roughly half (53,972,296) have null abstracts
 
 ```
 select * from (select count(title) as title_ct, paperid from `gcp-cset-projects.dim_mag_article_linking.unmatched_mag_ids` group by paperid) where title_ct > 1
