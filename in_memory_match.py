@@ -15,11 +15,12 @@ def clean_data(text, field):
     cleaning_functions = [lambda x: unicodedata.normalize("NFKC", x), deaccent, strip_tags,
                                                   strip_punctuation, strip_numeric, strip_non_alphanum,
                                                   strip_multiple_whitespaces]
-    if field != "last_names":
+    if field not in ["last_names", "last_name"]:
         cleaning_functions.append(remove_stopwords)
     else:
         # text is a list, make it into a string
-        text = " ".join(text)
+        last_names = [x.strip().split()[-1] for x in text if len(x.split()) > 0]
+        text = " ".join(last_names)
     clean_string_parts = preprocess_string(text, cleaning_functions)
     return [x.strip().lower() for x in clean_string_parts]
 
@@ -49,7 +50,11 @@ def clean_and_split_data(dataset_dir, working_dir, name):
                     else:
                         clean_js[field] = str(js[field])
                 else:
-                    clean_js[field] = clean_data(js[field], field)
+                    cleaned = clean_data(js[field], field)
+                    if field == "last_name":
+                        clean_js["last_names"] = cleaned
+                    else:
+                        clean_js[field] = cleaned
             year = clean_js["year"]
             if not year in output_files:
                 year_dir = os.path.join(working_dir, year)
@@ -119,8 +124,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if not args.resume:
-        clean_and_split_data(args.small_dataset_dir, args.working_dir, "small")
-        clean_and_split_data(args.large_dataset_dir, args.working_dir, "large")
+        with Pool() as pool:
+            pool.starmap(clean_and_split_data, [[args.small_dataset_dir, args.working_dir, "small"], [args.large_dataset_dir, args.working_dir, "large"]])
 
     with Pool() as pool:
         years = []
