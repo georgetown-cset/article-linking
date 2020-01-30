@@ -263,4 +263,12 @@ select * from (select count(title) as title_ct, paperid from `gcp-cset-projects.
 ```
 
 10.) In the unmatched MAG ids the titles are unique, Yay!
+Get the list of DOIs in Mag References:
+```
+create or replace table `gcp-cset-projects.dim_mag_article_linking.mag_ref_dois` as
+select  ARRAY_AGG(doi ORDER BY paperid) AS ref_doi_list
+from  (select * except(id1)  from (select * from `gcp-cset-projects.gcp_cset_mag.PaperReferences`) ref inner join (select paperid as id1, doi from `gcp-cset-projects.gcp_cset_mag.Papers`) dois on ref.PaperReferenceId = dois.id1) group by paperid
+```
+Get the list of DOIS in DS References:
+
 
