@@ -75,7 +75,7 @@ matches.
 With commit 35e927cf5abf57d4c03079653cae364b5d7fce66 , even this set gets
 
 system_name,precision,recall,f1
-wos_dim_article_linking.50K_plus_50K_eval_titlefilter4,0.9746122731060837,0.95896,0.9667227839551599
+wos_dim_article_linking.50K_plus_50K_eval_titlefilter,0.9746122731060837,0.95896,0.9667227839551599
 
 
 

@@ -7,6 +7,8 @@ from gensim.parsing.preprocessing import *
 from gensim.utils import deaccent
 from multiprocessing import Pool
 
+word_length_threshold = 4
+
 
 def clean_data(text, field):
     if text is None:
@@ -76,10 +78,11 @@ def create_index(year_path):
         for text_field in ["title", "abstract", "last_name"]:
             if (text_field in js) and js[text_field] is not None:
                 for word in js[text_field]:
-                    uniq_words.add(word)
-                    if word not in index:
-                        index[word] = set()
-                    index[word].add(js["id"])
+                    if len(word) > word_length_threshold:
+                        uniq_words.add(word)
+                        if word not in index:
+                            index[word] = set()
+                        index[word].add(js["id"])
         doc_to_unique_words[js["id"]] = len(uniq_words)
     pickle.dump(index, open(os.path.join(year_path, "large_index.pkl"), mode="wb"))
     pickle.dump(doc_to_unique_words, open(os.path.join(year_path, "large_counts.pkl"), mode="wb"))
@@ -94,7 +97,7 @@ def match_records(year_path):
     lg_id_map = pickle.load(open("working_dir/large_ids.pkl", mode="rb"))
     for line in open(os.path.join(year_path, "small_records.jsonl")):
         js = json.loads(line)
-        text_words = set(js["title"]+js["abstract"]+js["last_names"])
+        text_words = set([x for x in js["title"]+js["abstract"]+js["last_names"] if len(x) > word_length_threshold])
         doc_to_sim = {}
         for word in text_words:
             if word not in index:
@@ -123,9 +126,9 @@ if __name__ == "__main__":
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
 
-    if not args.resume:
-        with Pool() as pool:
-            pool.starmap(clean_and_split_data, [[args.small_dataset_dir, args.working_dir, "small"], [args.large_dataset_dir, args.working_dir, "large"]])
+#    if not args.resume:
+#        with Pool() as pool:
+#            pool.starmap(clean_and_split_data, [[args.small_dataset_dir, args.working_dir, "small"], [args.large_dataset_dir, args.working_dir, "large"]])
 
     with Pool() as pool:
         years = []
