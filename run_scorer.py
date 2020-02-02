@@ -6,16 +6,17 @@ from google.cloud import bigquery
 class ArticleLinkageEvaluator:
     key_joiner = "---"
     error_types = ["false_alarm", "miss"]
-    from_key = "wos_id"
-    to_key = "ds_id"
 
-    def __init__(self, full_table, ak_table, experiment_output_tables, report_file, error_file_template):
+    def __init__(self, full_table, ak_table, experiment_output_tables, report_file, error_file_template, from_key, to_key):
         self.client = bigquery.Client()
         self.full_table = full_table
         self.ak_table = ak_table
         self.experiment_output_tables = experiment_output_tables
         self.report_file = report_file
         self.error_file_template = error_file_template
+        self.from_key = from_key
+        self.to_key = to_key
+
 
     def unmake_key(self, key):
         fk, tk = key.split(self.key_joiner)
@@ -25,7 +26,7 @@ class ArticleLinkageEvaluator:
         }
 
     def mk_key(self, row):
-        return row[self.from_key]+self.key_joiner+row[self.to_key]
+        return f"{row[self.from_key]}{self.key_joiner}{row[self.to_key]}"
 
     def get_result_set(self, table):
         query = f"SELECT {self.from_key}, {self.to_key} from `{table}`"
@@ -40,16 +41,17 @@ class ArticleLinkageEvaluator:
             return key_map
         prefix = key.split("_")[0]+"_"
         formatted_errors = ",".join(set([f"'{e}'" for e in errors]))
-        query = f"SELECT * from `{self.full_table}` where {key} in ({formatted_errors})"
+        query = f"SELECT * from `{self.full_table}`"
         for result in self.client.query(query):
-            key_map[result.get(key)] = {k: result.get(k) for k in result.keys() if k.startswith(prefix)}
+            if result.get(key) in errors:
+                key_map[result.get(key)] = {k: result.get(k) for k in result.keys() if k.startswith(prefix)}
         return key_map
 
     def write_errors(self, errors, error_file):
         out = None
         for error_type in self.error_types:
-            from_map = self.extract_key_info(self.from_key, [self.unmake_key(k)[self.from_key] for k in errors[error_type]])
-            to_map = self.extract_key_info(self.to_key, [self.unmake_key(k)[self.to_key] for k in errors[error_type]])
+            from_map = self.extract_key_info(self.from_key, set([self.unmake_key(k)[self.from_key] for k in errors[error_type]]))
+            to_map = self.extract_key_info(self.to_key, set([self.unmake_key(k)[self.to_key] for k in errors[error_type]]))
             for error in errors[error_type]:
                 error_keymap = self.unmake_key(error)
                 row = {"error_type" : error_type}
@@ -104,8 +106,10 @@ if __name__ == "__main__":
     parser.add_argument("test_dataset")
     parser.add_argument("--report_file", default="report.csv")
     parser.add_argument("--error_file_template", default="errors{}.csv")
+    parser.add_argument("--from_key", default="wos_id")
+    parser.add_argument("--to_key", default="ds_id")
     args = parser.parse_args()
 
     evaluator = ArticleLinkageEvaluator(args.full_table, args.answer_key, args.test_dataset.split(","),
-                                        args.report_file, args.error_file_template)
+                                        args.report_file, args.error_file_template, args.from_key, args.to_key)
     evaluator.run_evaluation()
