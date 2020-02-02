@@ -1,4 +1,5 @@
 import argparse
+import copy
 import json
 import re
 import string
@@ -36,33 +37,68 @@ class SimpleScrub(beam.DoFn):
         yield record
 
 
-def run_pipeline(input_table, output_table, output_schema, pipeline_args):
-    #fields_to_clean = ["ds_title", "wos_title", "ds_abstract", "wos_abstract", "ds_last_names", "wos_last_names"]
-    fields_to_clean = ["title", "abstract"]
-    #fields_to_clean = ["OriginalTitle"]
-    #bq_input_query = f"SELECT * FROM [{input_table}]"
-    with beam.Pipeline(options=PipelineOptions(pipeline_args)) as p:
-        #(p | "Read from BQ" >> beam.io.Read(beam.io.BigQuerySource(query=bq_input_query, flatten_results=False))
-        (p | "Read from Text" >> beam.io.ReadFromText(input_table)
-            | "Scrub Text" >> beam.ParDo(SimpleScrub(fields_to_clean))
-            | "Write to Text" >> beam.io.WriteToText(output_table))
-#            | "Write to BQ" >> beam.io.WriteToBigQuery(output_table,
-#                                                       write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
-#                                                       schema=output_schema))
+class AggressiveScrub(beam.DoFn):
+    def __init__(self, fields):
+        self.fields = fields
+
+    def clean_text_data(self, text, field):
+        if text is None:
+            return None
+        # consider stemming and removing stopwords later
+        cleaning_functions = [lambda x: unicodedata.normalize("NFKC", x), deaccent, strip_tags,
+                              strip_punctuation, strip_numeric, strip_non_alphanum,
+                              strip_multiple_whitespaces]
+        if field not in ["last_names", "last_name"]:
+            cleaning_functions.append(remove_stopwords)
+        else:
+            # text is a list, make it into a string
+            last_names = [x.strip().split()[-1] for x in text if len(x.split()) > 0]
+            text = " ".join(sorted(last_names))
+        clean_string_parts = preprocess_string(text, cleaning_functions)
+        return [x.strip().lower() for x in clean_string_parts]
+
+    def clean_doi(self, doi):
+        return doi.lower()
+
+    def process(self, record_str):
+        js = json.loads(record_str)
+        clean_record = copy.deepcopy(js)
+        for field in self.fields:
+            if field not in js:
+                continue
+            if field.lower() == "doi":
+                clean_record[field] = self.clean_doi(js["doi"])
+            else:
+                cleaned = self.clean_text_data(js[field], field)
+                clean_record[field+"_norm"] = " ".join(cleaned)
+                clean_record[field+"_trunc_norm"] = " ".join(cleaned[:40])
+                clean_record[field+"_norm_len_filt"] = " ".join([x for x in cleaned if len(x) > 6])
+                clean_record[field+"_trunc_norm_len_filt"] = " ".join([x for x in cleaned[:40] if len(x) > 6])
+        yield clean_record
+
+
+def run_pipeline(input_dir, output_dir, fields_to_clean, do_aggressive, pipeline_args):
+    if do_aggressive:
+        with beam.Pipeline(options=PipelineOptions(pipeline_args)) as p:
+            (p | "Read from Text" >> beam.io.ReadFromText(input_dir)
+                | "Aggressively Scrub Text" >> beam.ParDo(AggressiveScrub(fields_to_clean))
+                | "Write to Text" >> beam.io.WriteToText(output_dir))
+    else:
+        with beam.Pipeline(options=PipelineOptions(pipeline_args)) as p:
+            (p | "Read from Text" >> beam.io.ReadFromText(input_dir)
+                | "Scrub Text" >> beam.ParDo(SimpleScrub(fields_to_clean))
+                | "Write to Text" >> beam.io.WriteToText(output_dir))
 
 
 if __name__ == "__main__":
-    """
-    Sample command:
-    python3 clean_corpus.py wos_dim_article_linking.filtered_doi_match_with_authors wos_dim_article_linking.clean_filtered_doi_match_with_authors --project gcp-cset-projects --disk_size_gb 30 --job_name clean-doi --save_main_session --region us-east1 --temp_location gs://cset-dataflow-test/example-tmps/ --runner DataflowRunner --requirements_file dataflow-requirements.txt
-    """
     parser = argparse.ArgumentParser()
-    parser.add_argument("input_table")
-    parser.add_argument("output_table")
+    parser.add_argument("input_dir")
+    parser.add_argument("output_dir")
+    parser.add_argument("fields_to_clean")
+    parser.add_argument("--aggressive", action="store_true")
     args, pipeline_args = parser.parse_known_args()
 
-    output_schema = json.load(open("eval_table_schema.json"))
-    run_pipeline(args.input_table, args.output_table, output_schema, pipeline_args)
+    run_pipeline(args.input_dir, args.output_dir, args.fields_to_clean.split(","), args.aggressive, pipeline_args)
 
 
 
