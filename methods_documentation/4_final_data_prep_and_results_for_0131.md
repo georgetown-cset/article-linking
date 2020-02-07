@@ -50,13 +50,40 @@ on a.id = p.id
 - Get authors (`wos_dim.wos_authors`)
 
 ```
-
+select
+  id, array_agg(last_name IGNORE NULLS) as last_name
+from gcp_cset_clarivate.wos_summary_names_latest
+where role="author"
+group by id
 ```
 
 - Create metadata table (`wos_dim.wos_metadata`)
 
 ```
-
+SELECT
+  ids.id,
+  a.year,
+  b.title,
+  c.abstract AS abstract,
+  d.last_name AS last_names
+FROM
+  wos_dim_article_linking.all_wos_ids_20200127 ids
+LEFT JOIN
+  wos_dim_article_linking.unique_pubyears_20200127 a
+ON
+  ids.id = a.id
+LEFT JOIN
+  wos_dim_article_linking.only_usable_titles_20200127 b
+ON
+  ids.id = b.id
+LEFT JOIN
+  wos_dim_article_linking.wos_abstract_paragraphs_20200127 c
+ON
+  ids.id = c.id
+LEFT JOIN
+  wos_dim.wos_authors d
+ON
+  ids.id = d.id
 ```
 
 #### DS
@@ -64,13 +91,27 @@ on a.id = p.id
 - Get authors (`wos_dim.ds_authors`)
 
 ```
-
+select
+  id,
+  ARRAY(select last_name from UNNEST(author_affiliations)) as last_name
+from gcp_cset_digital_science.dimensions_publications_latest
 ```
 
 - Create metadata table (`wos_dim.ds_metadata`)
 
 ```
-
+SELECT
+  d.id,
+  d.year,
+  d.title,
+  d.abstract,
+  a.last_name
+FROM
+  gcp_cset_digital_science.dimensions_publications_with_abstracts_latest d
+INNER JOIN
+  wos_dim.ds_authors a
+ON
+  d.id = a.id
 ```
 
 #### MAG

@@ -1,0 +1,1 @@
+select distinct(id) from gcp_cset_clarivate.wos_dynamic_identifiers_latest
