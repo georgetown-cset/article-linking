@@ -1,1 +1,1 @@
-{SMALL_TABLE}_{LARGE_TABLE}_base	sql/metadata_pair_match_template.sql
+{TABLE1}_{TABLE2}_base	sql/metadata_pair_match_template.sql	2

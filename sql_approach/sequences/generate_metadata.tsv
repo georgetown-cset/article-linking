@@ -1,12 +1,12 @@
-arxiv_authors	sql/arxiv_authors.sql
-arxiv_metadata	sql/arxiv_metadata.sql
-ds_authors	sql/ds_authors.sql
-ds_metadata	sql/ds_metadata.sql
-mag_authors	sql/mag_authors.sql
-mag_metadata	sql/mag_metadata.sql
-wos_authors	sql/wos_authors.sql
-wos_ids	sql/wos_ids.sql
-wos_abstracts	sql/wos_abstracts.sql
-wos_pubyears	sql/wos_pubyears.sql
-wos_titles	sql/wos_titles.sql
-wos_metadata	sql/wos_metadata.sql
+arxiv_authors	sql/arxiv_authors.sql	0
+arxiv_metadata	sql/arxiv_metadata.sql	0
+ds_authors	sql/ds_authors.sql	0
+ds_metadata	sql/ds_metadata.sql	0
+mag_authors	sql/mag_authors.sql	0
+mag_metadata	sql/mag_metadata.sql	0
+wos_authors	sql/wos_authors.sql	0
+wos_ids	sql/wos_ids.sql	0
+wos_abstracts	sql/wos_abstracts.sql	0
+wos_pubyears	sql/wos_pubyears.sql	0
+wos_titles	sql/wos_titles.sql	0
+wos_metadata	sql/wos_metadata.sql	0
