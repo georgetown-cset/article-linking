@@ -1,22 +1,21 @@
 import argparse
+import itertools
 
 from google.cloud import bigquery
 
 from utils import create_dataset, mk_tables
 
 
-def get_ascending_pairs(elts):
+def get_ascending_tuples(elts, tuple_size=2):
     '''
-    Given a list ['arxiv', 'wos', 'ds'], returns the "ascending pairs", i.e.:
+    Given a list ['arxiv', 'wos', 'ds'], returns the "ascending tuples", i.e.:
     [('arxiv', 'wos'), ('arxiv', 'ds'), ('wos', 'ds')]
-    :param elts: list to create ascending pairs from
-    :return: list of ascending pairs
+    :param elts: list to create ascending tuples from
+    :param tuple_size: size of tuples to create
+    :return: list of ascending tuples
     '''
-    pairs = []
-    for i in range(len(elts)):
-        for j in range(i+1, len(elts)):
-            pairs.append((elts[i], elts[j]))
-    return pairs
+    # it happens that itertools.combinations has the (ascending in list order) ordering we want
+    return list(itertools.combinations(elts, tuple_size))
 
 
 def get_sql_sequence(sql_sequence_file, dataset_name, corpora):
@@ -24,14 +23,21 @@ def get_sql_sequence(sql_sequence_file, dataset_name, corpora):
     for line in open(sql_sequence_file):
         if len(line.strip()) == 0:
             continue
-        table_name, query_file = line.strip().split("\t")
+        table_name, query_file, num_tables_str = line.strip().split("\t")
+        num_tables = int(num_tables_str)
         query_template = open(query_file).read().strip()
         query = query_template.replace("{DATASET}", dataset_name)
-        for sm, lg in get_ascending_pairs(corpora):
-            corpus_pair_query = query.replace("{SMALL_TABLE}", sm)
-            corpus_pair_query = corpus_pair_query.replace("{LARGE_TABLE}", lg)
-            pair_table_name = table_name.replace("{SMALL_TABLE}", sm).replace("{LARGE_TABLE}", lg)
-            table_queries.append((pair_table_name, corpus_pair_query))
+        if num_tables > 0:
+            for tpl in get_ascending_tuples(corpora):
+                query_instance = query
+                table_name_instance = table_name
+                for idx, elt in enumerate(tpl):
+                    repl_str = "{TABLE"+str(idx+1)+"}"
+                    query_instance = query_instance.replace(repl_str, elt)
+                    table_name_instance = table_name_instance.replace(repl_str, elt)
+                table_queries.append((table_name_instance, query_instance))
+        else:
+            table_queries.append((table_name, query))
     return table_queries
 
 

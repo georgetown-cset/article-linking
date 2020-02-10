@@ -47,8 +47,10 @@ gs://jtm-tmp1/2020-02-10/post-clean-arxiv_metadata-*
 
 `xxx`
 
-This is approximately the point at which you have to start making tricky decisions. The sequence below does the
-following steps:
+This is approximately the point at which you have to start making tricky decisions. The following
+pipeline would need some tweaking if you start running this over any datasets but arxiv, wos, ds, mag.
+It would also need tweaking in some places if you wanted to keep the base _norm tables in a separate 
+dataset. The sequence below does the following steps:
 
 a.) Take highest-scoring pair  
 
