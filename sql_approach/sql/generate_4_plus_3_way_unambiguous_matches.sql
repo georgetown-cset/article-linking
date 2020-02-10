@@ -7,7 +7,7 @@ union all
   wos_id,
   ds_id,
   null as mag_id
-from {DATASET}.arxiv_wos_ds
+from {DATASET}.arxiv_wos_ds_unambiguous
 where (arxiv_id not in (select arxiv_id from {DATASET}.all_4_way_unambiguous_filt)) and
   (wos_id not in (select wos_id from {DATASET}.all_4_way_unambiguous_filt)) and
   (ds_id not in (select ds_id from {DATASET}.all_4_way_unambiguous_filt)))
@@ -17,7 +17,7 @@ union all
   wos_id,
   null as ds_id,
   mag_id
-from {DATASET}.arxiv_wos_mag
+from {DATASET}.arxiv_wos_mag_unambiguous
 where (arxiv_id not in (select arxiv_id from {DATASET}.all_4_way_unambiguous_filt)) and
   (wos_id not in (select wos_id from {DATASET}.all_4_way_unambiguous_filt)) and
   (mag_id not in (select mag_id from {DATASET}.all_4_way_unambiguous_filt)))
@@ -27,7 +27,7 @@ union all
   null as wos_id,
   ds_id,
   mag_id
-from {DATASET}.arxiv_ds_mag
+from {DATASET}.arxiv_ds_mag_unambiguous
 where (arxiv_id not in (select arxiv_id from {DATASET}.all_4_way_unambiguous_filt)) and
   (mag_id not in (select mag_id from {DATASET}.all_4_way_unambiguous_filt)) and
   (ds_id not in (select ds_id from {DATASET}.all_4_way_unambiguous_filt)))
@@ -37,7 +37,7 @@ union all
   wos_id,
   ds_id,
   mag_id
-from {DATASET}.wos_ds_mag
+from {DATASET}.wos_ds_mag_unambiguous
 where (wos_id not in (select wos_id from {DATASET}.all_4_way_unambiguous_filt)) and
   (mag_id not in (select mag_id from {DATASET}.all_4_way_unambiguous_filt)) and
   (ds_id not in (select ds_id from {DATASET}.all_4_way_unambiguous_filt))))

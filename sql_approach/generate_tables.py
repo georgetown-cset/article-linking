@@ -6,7 +6,7 @@ from google.cloud import bigquery
 from utils import create_dataset, mk_tables
 
 
-def get_ascending_tuples(elts, tuple_size=2):
+def get_ascending_tuples(elts, tuple_size):
     '''
     Given a list ['arxiv', 'wos', 'ds'], returns the "ascending tuples", i.e.:
     [('arxiv', 'wos'), ('arxiv', 'ds'), ('wos', 'ds')]
@@ -21,14 +21,15 @@ def get_ascending_tuples(elts, tuple_size=2):
 def get_sql_sequence(sql_sequence_file, dataset_name, corpora):
     table_queries = []
     for line in open(sql_sequence_file):
-        if len(line.strip()) == 0:
+        # we're using -- at the start of a line as a comment indicator
+        if len(line.strip()) == 0 or line.startswith("--"):
             continue
         table_name, query_file, num_tables_str = line.strip().split("\t")
         num_tables = int(num_tables_str)
         query_template = open(query_file).read().strip()
         query = query_template.replace("{DATASET}", dataset_name)
         if num_tables > 0:
-            for tpl in get_ascending_tuples(corpora):
+            for tpl in get_ascending_tuples(corpora, num_tables):
                 query_instance = query
                 table_name_instance = table_name
                 for idx, elt in enumerate(tpl):

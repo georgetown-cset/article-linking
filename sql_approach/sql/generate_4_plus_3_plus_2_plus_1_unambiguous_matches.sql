@@ -1,5 +1,5 @@
 select distinct * from
-(select * from {DATASET}.all_full_matches_plus_3_plus_2
+(select * from {DATASET}.all_4_plus_3_plus_2
 union all
 --- finally, add in the ids we couldn't match to anything
 (select
