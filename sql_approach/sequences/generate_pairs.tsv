@@ -1,0 +1,5 @@
+{SMALL_TABLE}_{LARGE_TABLE}_abstract_author	sql/abstract_author_template.sql
+{SMALL_TABLE}_{LARGE_TABLE}_abstract_title	sql/abstract_title_template.sql
+{SMALL_TABLE}_{LARGE_TABLE}_abstract_year	sql/abstract_year_template.sql
+{SMALL_TABLE}_{LARGE_TABLE}_title_author	sql/title_author_template.sql
+{SMALL_TABLE}_{LARGE_TABLE}_title_year	sql/title_year_template.sql

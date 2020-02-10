@@ -6,7 +6,7 @@ mag_authors	sql/mag_authors.sql
 mag_metadata	sql/mag_metadata.sql
 wos_authors	sql/wos_authors.sql
 wos_ids	sql/wos_ids.sql
-wos_paragraphs	sql/wos_paragraphs.sql
+wos_abstracts	sql/wos_abstracts.sql
 wos_pubyears	sql/wos_pubyears.sql
 wos_titles	sql/wos_titles.sql
 wos_metadata	sql/wos_metadata.sql

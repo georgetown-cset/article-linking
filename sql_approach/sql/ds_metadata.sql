@@ -3,7 +3,7 @@ SELECT
   d.year,
   d.title,
   d.abstract,
-  a.last_name
+  a.last_names
 FROM
   gcp_cset_digital_science.dimensions_publications_with_abstracts_latest d
 INNER JOIN

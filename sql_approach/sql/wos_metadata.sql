@@ -3,11 +3,11 @@ SELECT
   a.year,
   b.title,
   c.abstract AS abstract,
-  d.last_name AS last_names
+  d.last_names AS last_names
 FROM
   {DATASET}.wos_ids ids
 LEFT JOIN
-  {DATASET}.wos_unique_pubyears a
+  {DATASET}.wos_pubyears a
 ON
   ids.id = a.id
 LEFT JOIN
@@ -15,10 +15,10 @@ LEFT JOIN
 ON
   ids.id = b.id
 LEFT JOIN
-  {DATASET}.wos_abstract_paragraphs c
+  {DATASET}.wos_abstracts c
 ON
   ids.id = c.id
 LEFT JOIN
-  wos_dim.wos_authors d
+  {DATASET}.wos_authors d
 ON
   ids.id = d.id

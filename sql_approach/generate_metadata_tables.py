@@ -2,7 +2,7 @@ import argparse
 
 from google.cloud import bigquery
 
-from utils import create_dataset
+from utils import create_dataset, mk_tables
 
 
 def get_sql_sequence(sql_sequence_file, dataset_name):
@@ -15,14 +15,6 @@ def get_sql_sequence(sql_sequence_file, dataset_name):
         query = query_template.replace("{DATASET}", dataset_name)
         table_queries.append((table_name, query))
     return table_queries
-
-
-def mk_tables(client, dataset_name, table_queries: list):
-    for table_name, query in table_queries:
-        print(f"Running '{query}' for output to {dataset_name}.{table_name}")
-        job_config = bigquery.QueryJobConfig(destination="gcp-cset-projects."+dataset_name+"."+table_name)
-        query_job = client.query(query, job_config=job_config)
-        query_job.result()
 
 
 if __name__ == "__main__":

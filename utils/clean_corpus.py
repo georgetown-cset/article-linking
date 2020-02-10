@@ -41,6 +41,13 @@ class AggressiveScrub(beam.DoFn):
     def __init__(self, fields):
         self.fields = fields
 
+    def strip_copyright(self, text):
+        patterns = [r'(copyright)?\s+\(c\).*', r'\s+(c)\s+\d\d\d\d.*']
+        clean_text = text.lower()
+        for p in patterns:
+            clean_text = re.sub(p, '', clean_text)
+        return clean_text
+
     def clean_text_data(self, text, field):
         if text is None:
             return None
@@ -50,6 +57,8 @@ class AggressiveScrub(beam.DoFn):
                               strip_multiple_whitespaces]
         if field not in ["last_names", "last_name"]:
             cleaning_functions.append(remove_stopwords)
+            if field == "abstract":
+                cleaning_functions.append(self.strip_copyright)
         else:
             # text is a list, make it into a string
             last_names = [x.strip().split()[-1] for x in text if len(x.split()) > 0]
