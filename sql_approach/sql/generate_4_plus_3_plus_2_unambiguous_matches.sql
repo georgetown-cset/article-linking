@@ -1,5 +1,5 @@
 select distinct * from
-(select * from {DATASET}.all_4_plus_3_plus_2_pairs
+(select * from {DATASET}.all_4_plus_3_way_unambiguous_filt
 union all
 --- get the two-way matches that couldn't be fully linked
 (select * from {DATASET}.all_4_plus_3_plus_2_pairs where
