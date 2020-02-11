@@ -1,7 +1,0 @@
-ak,results,from_key,to_key
-wos_dim.arxiv_wos_dois,wos_dim.arxiv_wos_matched_with_dois,arxiv_id,wos_id
-wos_dim.arxiv_ds_dois,wos_dim.arxiv_ds_matched_with_dois,arxiv_id,ds_id
-wos_dim.arxiv_mag_dois,wos_dim.arxiv_mag_matched_with_dois,arxiv_id,mag_id
-wos_dim.wos_ds_dois,wos_dim.wos_ds_matched_with_dois,wos_id,ds_id
-wos_dim.wos_mag_dois,wos_dim.wos_mag_matched_with_dois,wos_id,mag_id
-wos_dim.ds_mag_dois,wos_dim.ds_mag_matched_with_dois,ds_id,mag_id
