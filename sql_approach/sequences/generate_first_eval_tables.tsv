@@ -1,0 +1,4 @@
+-- get rows from the linkage table we want to evaluate where the smaller table id is in the set of rows output by the
+-- query above. We're evaluating performance wrt the number of rows in in the smaller (subsetted) table that were
+-- correctly matched to the larger table
+{TABLE1}_{TABLE2}_first_dois_matched	sql/test_first_data_doi_matches.sql	2

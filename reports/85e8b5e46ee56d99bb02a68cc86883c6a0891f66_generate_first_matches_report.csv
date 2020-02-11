@@ -1,0 +1,7 @@
+experiment_name,precision,recall,f1
+test_generate_metadata.arxiv_wos_first_dois_matched,0.9846711594645721,0.8321104776825218,0.90198532625958
+test_generate_metadata.arxiv_ds_first_dois_matched,0.8299279985251772,0.7078168978216147,0.7640240754197423
+test_generate_metadata.arxiv_mag_first_dois_matched,0.9414819297339598,0.7157680996047316,0.8132541496189056
+test_generate_metadata.wos_ds_first_dois_matched,0.7870500380824627,0.8895313248373767,0.8351585894639033
+test_generate_metadata.wos_mag_first_dois_matched,0.9795077926954125,0.8964590605651103,0.9361451500379904
+test_generate_metadata.ds_mag_first_dois_matched,0.8447599100121421,0.9150172303154925,0.8784860939800181

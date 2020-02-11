@@ -1,0 +1,30 @@
+{TABLE1}_{TABLE2}_first	sql/generate_first_pairs.sql	2
+all_first_pairs	sql/generate_all_first_pairs.sql	0
+{TABLE1}_{TABLE2}_{TABLE3}_first	sql/generate_all_first_triples.sql	3
+
+-- the semantics of the tables in the next line are important - it's not just simple combinations - so write them all out
+arxiv_4_way_first	sql/generate_arxiv_first_full_matches.sql	0
+wos_4_way_first	sql/generate_wos_first_full_matches.sql	0
+ds_4_way_first	sql/generate_ds_first_full_matches.sql	0
+mag_4_way_first	sql/generate_mag_first_full_matches.sql	0
+
+all_4_way_first	sql/generate_all_4_way_first_matches.sql	0
+all_4_way_first_filt	sql/generate_all_4_way_first_filt.sql	0
+
+-- add the triples in, one dataset at a time, largest to smallest. In each new table, check that you're only adding
+-- ids that don't already occur in the merged table
+first_4_plus_3_way_mag_matches	sql/generate_4_plus_3_way_mag_matches.sql	0
+first_4_plus_3_way_mag_ds_matches	sql/generate_4_plus_3_way_mag_ds_matches.sql	0
+first_4_plus_3_way_mag_ds_wos_matches	sql/generate_4_plus_3_way_mag_ds_wos_matches.sql	0
+first_4_plus_3_way_mag_ds_wos_arxiv_matches	sql/generate_4_plus_3_way_mag_ds_wos_arxiv_matches.sql	0
+
+-- add the pairs in, one dataset at a time
+first_4_plus_3_plus_2_way_ds_mag_matches	sql/first_4_plus_3_plus_2_way_ds_mag_matches.sql	0
+first_4_plus_3_plus_2_way_wos_mag_dm_matches	sql/first_4_plus_3_plus_2_way_wos_mag_dm_matches.sql	0
+first_4_plus_3_plus_2_way_wos_ds_wm_dm_matches	sql/first_4_plus_3_plus_2_way_wos_ds_wm_dm_matches.sql	0
+first_4_plus_3_plus_2_way_arxiv_mag_wd_wm_dm_matches	sql/first_4_plus_3_plus_2_way_arxiv_mag_wd_wm_dm_matches.sql	0
+first_4_plus_3_plus_2_way_arxiv_ds_am_wd_wm_dm_matches	sql/first_4_plus_3_plus_2_way_arxiv_ds_am_wd_wm_dm_matches.sql	0
+first_4_plus_3_plus_2_way_arxiv_wos_ad_am_wd_wm_dm_matches	sql/first_4_plus_3_plus_2_way_arxiv_wos_ad_am_wd_wm_dm_matches.sql	0
+
+-- finally, add any remaining single ids in
+first_4_plus_3_plus_2_plus_1	sql/generate_4_plus_3_plus_2_plus_1_first_matches.sql	0
