@@ -34,10 +34,8 @@ def create_match_map(match_dir, dataset):
 def get_combined_map(match_map):
     print("getting combined map")
     pointer_map = {}
-    print(match_map)
     for k, vals in match_map.items():
         for v in vals:
-            print(f"{k}, {v}")
             if (k in pointer_map) and (v in pointer_map):
                 shift_key = pointer_map[v]
                 for elt in pointer_map:
@@ -50,7 +48,6 @@ def get_combined_map(match_map):
             else:
                 pointer_map[k] = k
                 pointer_map[v] = k
-            print(pointer_map)
 
     combined_map = {}
     for k, v in pointer_map.items():
