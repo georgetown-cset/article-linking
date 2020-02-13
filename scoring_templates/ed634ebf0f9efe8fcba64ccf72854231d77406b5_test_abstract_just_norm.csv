@@ -1,0 +1,7 @@
+ak,results,from_key,to_key
+gcp_cset_links.arxiv_wos_dois,test_abstract_just_norm.arxiv_wos_dois_matched,arxiv_id,wos_id
+gcp_cset_links.arxiv_ds_dois,test_abstract_just_norm.arxiv_ds_dois_matched,arxiv_id,ds_id
+gcp_cset_links.arxiv_mag_dois,test_abstract_just_norm.arxiv_mag_dois_matched,arxiv_id,mag_id
+gcp_cset_links.wos_ds_dois,test_abstract_just_norm.wos_ds_dois_matched,wos_id,ds_id
+gcp_cset_links.wos_mag_dois,test_abstract_just_norm.wos_mag_dois_matched,wos_id,mag_id
+gcp_cset_links.ds_mag_dois,test_abstract_just_norm.ds_mag_dois_matched,ds_id,mag_id
