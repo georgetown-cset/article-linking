@@ -34,20 +34,30 @@ def create_match_map(match_dir, dataset):
 def get_combined_map(match_map):
     print("getting combined map")
     pointer_map = {}
+    reverse_pointer_map = {}
     for k, vals in match_map.items():
         for v in vals:
             if (k in pointer_map) and (v in pointer_map):
                 shift_key = pointer_map[v]
-                for elt in pointer_map:
-                    if pointer_map[elt] == shift_key:
-                        pointer_map[elt] = k
+                for elt in reverse_pointer_map[shift_key]:
+                    pointer_map[elt] = shift_key
             elif k in pointer_map:
                 pointer_map[v] = pointer_map[k]
+                if k not in reverse_pointer_map:
+                    reverse_pointer_map[k] = set()
+                reverse_pointer_map[k].add(v)
             elif v in pointer_map:
                 pointer_map[k] = pointer_map[v]
+                if v not in reverse_pointer_map:
+                    reverse_pointer_map[v] = set()
+                reverse_pointer_map[v].add(k)
             else:
                 pointer_map[k] = k
                 pointer_map[v] = k
+                if k not in reverse_pointer_map:
+                    reverse_pointer_map[k] = set()
+                reverse_pointer_map[k].add(k)
+                reverse_pointer_map[k].add(v)
 
     combined_map = {}
     for k, v in pointer_map.items():
