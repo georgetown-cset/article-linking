@@ -4,6 +4,7 @@ import os
 
 
 def create_metadata_map(meta_dir):
+    print("getting metadata map")
     meta_map = {}
     for fi in os.listdir(meta_dir):
         for line in open(os.path.join(meta_dir, fi)):
@@ -17,6 +18,7 @@ def is_null(s):
 
 
 def create_match_map(match_dir, dataset):
+    print("getting match map")
     match_map = {}
     for fi in os.listdir(match_dir):
         for line in open(os.path.join(match_dir,fi)):
@@ -26,6 +28,7 @@ def create_match_map(match_dir, dataset):
 
 
 def get_combined_map(match_map):
+    print("getting combined map")
     pointer_map = {}
     for k, v in match_map.items():
         if (k in pointer_map) and (v in pointer_map):
@@ -77,6 +80,7 @@ def get_best_record(record_list):
 
 def combine(match_map, meta_map, selected_metadata):
     out_combined = open(selected_metadata, mode="w")
+    print("creating combined map")
     combined_map = get_combined_map(match_map)
     # now, write out all the metadata to one record per combined id
     for record_id in combined_map:
