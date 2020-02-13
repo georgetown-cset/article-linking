@@ -1,0 +1,4 @@
+{TABLE1}_{TABLE2}_abstract_author_year	sql/abstract_author_year_template.sql	2
+{TABLE1}_{TABLE2}_abstract_author_title	sql/abstract_author_title_template.sql	2
+{TABLE1}_{TABLE2}_abstract_title_year	sql/abstract_title_year_template.sql	2
+{TABLE1}_{TABLE2}_author_title_year	sql/author_title_year_template.sql	2

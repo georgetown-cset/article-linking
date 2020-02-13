@@ -1,4 +1,4 @@
-{TABLE1}_{TABLE2}_base	sql/metadata_pair_match_template.sql	2
+{TABLE1}_{TABLE2}_base	sql/metadata_triple_pair_match_template.sql	2
 all_pairs	sql/generate_all_pairs.sql	0
 {TABLE1}_{TABLE2}_{TABLE3}_triples	sql/generate_all_triples.sql	3
 

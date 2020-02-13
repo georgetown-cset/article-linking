@@ -1,4 +1,4 @@
-{TABLE1}_{TABLE2}_base	sql/metadata_pair_match_template.sql	2
+{TABLE1}_{TABLE2}_base	sql/metadata_triple_pair_match_template.sql	2
 {TABLE1}_{TABLE2}_unambiguous	sql/generate_unambiguous_pairs.sql	2
 all_unambiguous_pairs	sql/generate_all_unambiguous_pairs.sql	0
 {TABLE1}_{TABLE2}_{TABLE3}_unambiguous	sql/generate_all_unambiguous_triples.sql	3
