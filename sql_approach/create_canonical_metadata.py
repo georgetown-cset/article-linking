@@ -1,4 +1,5 @@
 import argparse
+import copy
 import json
 import os
 
@@ -23,32 +24,40 @@ def create_match_map(match_dir, dataset):
     for fi in os.listdir(match_dir):
         for line in open(os.path.join(match_dir,fi)):
             js = json.loads(line)
-            match_map[js[dataset+"1_id"]] = js[dataset+"2_id"]
+            key = js[dataset+"1_id"]
+            if key not in match_map:
+                match_map[key] = set()
+            match_map[key].add(js[dataset+"2_id"])
     return match_map
 
 
 def get_combined_map(match_map):
     print("getting combined map")
     pointer_map = {}
-    for k, v in match_map.items():
-        if (k in pointer_map) and (v in pointer_map):
-            shift_key = pointer_map[v]
-            for elt in pointer_map:
-                if pointer_map[elt] == shift_key:
-                    pointer_map[elt] = k
-        elif k in pointer_map:
-            pointer_map[v] = k
-        elif v in pointer_map:
-            pointer_map[k] = v
-        else:
-            pointer_map[k] = k
-            pointer_map[v] = k
+    print(match_map)
+    for k, vals in match_map.items():
+        for v in vals:
+            print(f"{k}, {v}")
+            if (k in pointer_map) and (v in pointer_map):
+                shift_key = pointer_map[v]
+                for elt in pointer_map:
+                    if pointer_map[elt] == shift_key:
+                        pointer_map[elt] = k
+            elif k in pointer_map:
+                pointer_map[v] = pointer_map[k]
+            elif v in pointer_map:
+                pointer_map[k] = pointer_map[v]
+            else:
+                pointer_map[k] = k
+                pointer_map[v] = k
+            print(pointer_map)
 
     combined_map = {}
     for k, v in pointer_map.items():
-        if k not in combined_map:
-            combined_map[k] = set()
-        combined_map[k].add(v)
+        if v not in combined_map:
+            combined_map[v] = {k}
+        else:
+            combined_map[v].add(k)
     return combined_map
 
 
@@ -59,22 +68,21 @@ def get_best_record(record_list):
     # get a row with fewest nulls, as well as all metadata possibilities. This row will contain the id we will use
     # for this record within-dataset going forward
     for row in record_list:
-        num_nulls = sum([c for c in row if is_null(c)])
+        num_nulls = sum([is_null(row[c]) for c in row])
         if num_nulls < min_nulls:
             min_nulls = num_nulls
             min_null_row = row
         for c in row:
             if c not in row_meta_possibilities:
                 row_meta_possibilities[c] = set()
-            row_meta_possibilities[c].add(row[c])
+            if not is_null(row[c]):
+                row_meta_possibilities[c].add(row[c])
 
-    joined_row = min_null_row
+    joined_row = copy.deepcopy(min_null_row)
     for idx, col in enumerate(min_null_row):
-        if is_null(col):
+        if is_null(min_null_row[col]):
             if len(row_meta_possibilities[col]) > 0:
-                joined_row[idx] = row_meta_possibilities[col][0]
-                print(min_null_row)
-                print(joined_row)
+                joined_row[col] = list(row_meta_possibilities[col])[0]
     return joined_row
 
 
