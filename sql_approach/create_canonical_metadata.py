@@ -18,54 +18,31 @@ def is_null(s):
     return (s is None) or (len(s.strip()) == 0)
 
 
-def create_match_map(match_dir, dataset):
-    print("getting match map")
-    match_map = {}
+def create_match_sets(match_dir, dataset):
+    print("getting match set")
+    match_set_map = {}
     for fi in os.listdir(match_dir):
         for line in open(os.path.join(match_dir,fi)):
             js = json.loads(line)
-            key = js[dataset+"1_id"]
-            if key not in match_map:
-                match_map[key] = set()
-            match_map[key].add(js[dataset+"2_id"])
-    return match_map
-
-
-def get_combined_map(match_map):
-    print("getting combined map")
-    pointer_map = {}
-    reverse_pointer_map = {}
-    for k, vals in match_map.items():
-        for v in vals:
-            if (k in pointer_map) and (v in pointer_map):
-                shift_key = pointer_map[v]
-                for elt in reverse_pointer_map[shift_key]:
-                    pointer_map[elt] = shift_key
-            elif k in pointer_map:
-                pointer_map[v] = pointer_map[k]
-                if k not in reverse_pointer_map:
-                    reverse_pointer_map[k] = set()
-                reverse_pointer_map[k].add(v)
-            elif v in pointer_map:
-                pointer_map[k] = pointer_map[v]
-                if v not in reverse_pointer_map:
-                    reverse_pointer_map[v] = set()
-                reverse_pointer_map[v].add(k)
+            key1 = js[dataset+"1_id"]
+            key2 = js[dataset+"2_id"]
+            if (key1 in match_set_map) and (key2 in match_set_map):
+                set1 = match_set_map[key1]
+                set2 = match_set_map[key2]
+                union = set1.union(set2)
+                for key in union:
+                    match_set_map[key] = union
+            elif key1 in match_set_map:
+                match_set_map[key1].add(key2)
+                match_set_map[key2] = match_set_map[key1]
+            elif key2 in match_set_map:
+                match_set_map[key2].add(key1)
+                match_set_map[key1] = match_set_map[key2]
             else:
-                pointer_map[k] = k
-                pointer_map[v] = k
-                if k not in reverse_pointer_map:
-                    reverse_pointer_map[k] = set()
-                reverse_pointer_map[k].add(k)
-                reverse_pointer_map[k].add(v)
-
-    combined_map = {}
-    for k, v in pointer_map.items():
-        if v not in combined_map:
-            combined_map[v] = {k}
-        else:
-            combined_map[v].add(k)
-    return combined_map
+                pair_set = {key1, key2}
+                match_set_map[key1] = pair_set
+                match_set_map[key2] = pair_set
+    return match_set_map
 
 
 def get_best_record(record_list):
@@ -93,13 +70,20 @@ def get_best_record(record_list):
     return joined_row
 
 
-def combine(match_map, meta_map, selected_metadata):
+def combine(match_set_map, meta_map, selected_metadata):
     out_combined = open(selected_metadata, mode="w")
-    print("creating combined map")
-    combined_map = get_combined_map(match_map)
-    # now, write out all the metadata to one record per combined id
-    for record_id in combined_map:
-        meta_record_list = [meta_map[r] for r in combined_map[record_id]]
+    # now, write out the merged metadata to one record per match set
+    # keep track of the sets we've seen by their object ids
+    seen_set_ids = set()
+    for key in match_set_map:
+        match_set = match_set_map[key]
+        # check if we've already processed this match set
+        match_set_id = id(match_set)
+        if match_set_id in seen_set_ids:
+            continue
+        seen_set_ids.add(match_set_id)
+
+        meta_record_list = [meta_map[r] for r in match_set]
         best_record = get_best_record(meta_record_list)
         out_combined.write(json.dumps(best_record)+"\n")
 
@@ -113,5 +97,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     meta_map = create_metadata_map(args.metadata_dir)
-    match_map = create_match_map(args.match_dir, args.dataset)
+    match_map = create_match_sets(args.match_dir, args.dataset)
     combine(match_map, meta_map, args.selected_metadata)

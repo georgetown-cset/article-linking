@@ -1,35 +1,42 @@
 import unittest
-from ..create_canonical_metadata import get_combined_map, get_best_record
+import os
+from ..create_canonical_metadata import create_match_sets, get_best_record
+
+static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
 class TestGetCombinedMap(unittest.TestCase):
-    def test_get_combined_map(self):
-        match_map = {
-            "A": {"B"},
-            "B": {"C"}
-        }
-        self.assertIn(get_combined_map(match_map), [
-            {
-                "A": {"A", "B", "C"}
-            },
-            {
-                "B": {"A", "B", "C"}
-            }
-        ])
-
     def test_get_combined_map1(self):
-        match_map = {
-            "A": {"B", "D"},
-            "C": {"D"},
-            "B": {"C"}
+        match_dir = os.path.join(static_dir, "test_get_combined_map1")
+        result_set = {"A", "B", "C"}
+        expected_result = {
+            "A": result_set,
+            "B": result_set,
+            "C": result_set
         }
-        self.assertIn(get_combined_map(match_map), [
-            {
-                "A": {"A", "B", "C", "D"}
-            },
-            {
-                "B": {"A", "B", "C", "D"}
-            }
-        ])
+        self.assertEqual(create_match_sets(match_dir, "arxiv"), expected_result)
+
+    def test_get_combined_map2(self):
+        match_dir = os.path.join(static_dir, "test_get_combined_map2")
+        result_set = {"A", "B", "C", "D"}
+        expected_result = {
+            "A": result_set,
+            "B": result_set,
+            "C": result_set,
+            "D": result_set
+        }
+        self.assertEqual(create_match_sets(match_dir, "arxiv"), expected_result)
+
+    def test_get_combined_map3(self):
+        match_dir = os.path.join(static_dir, "test_get_combined_map3")
+        result_set = {"A", "B", "C", "D", "E"}
+        expected_result = {
+            "A": result_set,
+            "B": result_set,
+            "C": result_set,
+            "D": result_set,
+            "E": result_set
+        }
+        self.assertEqual(create_match_sets(match_dir, "arxiv"), expected_result)
 
 class TestGetBestRecord(unittest.TestCase):
     def test_get_best_record(self):
