@@ -1,4 +1,5 @@
 import argparse
+import ast
 import copy
 import json
 import os
@@ -9,13 +10,23 @@ def create_metadata_map(meta_dir):
     meta_map = {}
     for fi in os.listdir(meta_dir):
         for line in open(os.path.join(meta_dir, fi)):
-            js = json.loads(line)
-            meta_map[js["id"]] = js
+            js = ast.literal_eval(line)
+            clean_js = copy.deepcopy(js)
+            for k in js:
+                if ("_trunc" in k) and (k in clean_js):
+                    del clean_js[k]
+                if ("_filt" in k) and (k in clean_js):
+                    del clean_js[k]
+            meta_map[js["id"]] = clean_js
     return meta_map
 
 
 def is_null(s):
-    return (s is None) or (len(s.strip()) == 0)
+    if s is None:
+        return True
+    if type(s) == list:
+        return len(s) == 0
+    return len(s.strip()) == 0
 
 
 def create_match_sets(match_dir, dataset):
@@ -58,9 +69,9 @@ def get_best_record(record_list):
             min_null_row = row
         for c in row:
             if c not in row_meta_possibilities:
-                row_meta_possibilities[c] = set()
+                row_meta_possibilities[c] = []
             if not is_null(row[c]):
-                row_meta_possibilities[c].add(row[c])
+                row_meta_possibilities[c].append(row[c])
 
     joined_row = copy.deepcopy(min_null_row)
     for idx, col in enumerate(min_null_row):
@@ -71,6 +82,7 @@ def get_best_record(record_list):
 
 
 def combine(match_set_map, meta_map, selected_metadata):
+    print("merging records")
     out_combined = open(selected_metadata, mode="w")
     # now, write out the merged metadata to one record per match set
     # keep track of the sets we've seen by their object ids
