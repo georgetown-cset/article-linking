@@ -4,19 +4,19 @@ import copy
 import json
 import os
 
+from tqdm import tqdm
+
 
 def create_metadata_map(meta_dir):
     print("getting metadata map")
     meta_map = {}
-    for fi in os.listdir(meta_dir):
+    for fi in tqdm(os.listdir(meta_dir)):
         for line in open(os.path.join(meta_dir, fi)):
             js = ast.literal_eval(line)
-            clean_js = copy.deepcopy(js)
+            clean_js = {}
             for k in js:
-                if ("_trunc" in k) and (k in clean_js):
-                    del clean_js[k]
-                if ("_filt" in k) and (k in clean_js):
-                    del clean_js[k]
+                if ("_trunc" not in k) and ("_filt" not in k):
+                    clean_js[k] = js[k]
             meta_map[js["id"]] = clean_js
     return meta_map
 
@@ -32,7 +32,7 @@ def is_null(s):
 def create_match_sets(match_dir, dataset):
     print("getting match set")
     match_set_map = {}
-    for fi in os.listdir(match_dir):
+    for fi in tqdm(os.listdir(match_dir)):
         for line in open(os.path.join(match_dir,fi)):
             js = json.loads(line)
             key1 = js[dataset+"1_id"]
