@@ -12,12 +12,10 @@ def create_metadata_map_subset(meta_fi):
     meta_map = {}
     for line in open(meta_fi):
         js = ast.literal_eval(line)
-        clean_js = copy.deepcopy(js)
+        clean_js = {}
         for k in js:
-            if ("_trunc" in k) and (k in clean_js):
-                del clean_js[k]
-            if ("_filt" in k) and (k in clean_js):
-                del clean_js[k]
+            if ("_trunc" not in k) and ("_filt" not in k):
+                clean_js[k] = js[k]
         meta_map[js["id"]] = clean_js
     return meta_map
 
@@ -117,13 +115,15 @@ def get_best_record(record_list):
     return joined_row
 
 
-def combine(match_set_map, meta_map, selected_metadata):
+def combine(match_set_map, meta_map, selected_metadata, match_sets):
     print("merging records")
     out_combined = open(selected_metadata, mode="w")
+    out_matches = open(match_sets, mode="w")
     # now, write out the merged metadata to one record per match set
     # keep track of the sets we've seen by their object ids
     seen_set_ids = set()
     for key in match_set_map:
+        out_matches.write(json.dumps({"id": key, "matches": match_set_map[key]})+"\n")
         match_set = match_set_map[key]
         # check if we've already processed this match set
         match_set_id = id(match_set)
@@ -141,9 +141,10 @@ if __name__ == "__main__":
     parser.add_argument("metadata_dir")
     parser.add_argument("match_dir")
     parser.add_argument("selected_metadata")
+    parser.add_argument("match_sets")
     parser.add_argument("dataset")
     args = parser.parse_args()
 
     meta_map = create_metadata_map(args.metadata_dir)
     match_map = create_match_sets(args.match_dir, args.dataset)
-    combine(match_map, meta_map, args.selected_metadata)
+    combine(match_map, meta_map, args.selected_metadata, args.match_sets)

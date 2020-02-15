@@ -15,14 +15,14 @@ class SimpleScrub(beam.DoFn):
         self.fields = fields
 
     @staticmethod
-    def clean(text):
+    def clean(text, delimiter = " "):
         if text is None:
             return None
         # consider stemming and removing stopwords later
         clean_string_parts = preprocess_string(text, [lambda x: unicodedata.normalize("NFKC", x), deaccent, strip_tags,
                                                  strip_punctuation, strip_numeric, strip_non_alphanum,
                                                  strip_multiple_whitespaces])
-        return (" ".join(clean_string_parts)).strip().lower()
+        return (delimiter.join(clean_string_parts)).strip().lower()
 
     def process(self, record_str):
         record = json.loads(record_str)
