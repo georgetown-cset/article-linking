@@ -9,50 +9,22 @@ class TestGetCombinedMap(unittest.TestCase):
 
     def test_get_combined_map1(self):
         match_dir = os.path.join(static_dir, "test_get_combined_map1")
-        result_set = {"A", "B", "C"}
-        expected_result = {
-            "A": result_set,
-            "B": result_set,
-            "C": result_set
-        }
+        expected_result = [{"A", "B", "C"}]
         self.assertEqual(create_match_sets(match_dir, "arxiv"), expected_result)
 
     def test_get_combined_map2(self):
         match_dir = os.path.join(static_dir, "test_get_combined_map2")
-        result_set = {"A", "B", "C", "D"}
-        expected_result = {
-            "A": result_set,
-            "B": result_set,
-            "C": result_set,
-            "D": result_set
-        }
+        expected_result = [{"A", "B", "C", "D"}]
         self.assertEqual(create_match_sets(match_dir, "arxiv"), expected_result)
 
     def test_get_combined_map3(self):
         match_dir = os.path.join(static_dir, "test_get_combined_map3")
-        result_set = {"A", "B", "C", "D", "E"}
-        expected_result = {
-            "A": result_set,
-            "B": result_set,
-            "C": result_set,
-            "D": result_set,
-            "E": result_set
-        }
+        expected_result = [{"A", "B", "C", "D", "E"}]
         self.assertEqual(create_match_sets(match_dir, "arxiv"), expected_result)
 
     def test_get_combined_map4(self):
         match_dir = os.path.join(static_dir, "test_get_combined_map4")
-        result_set = {"A", "B", "C", "D", "E", "F", "G", "H"}
-        expected_result = {
-            "A": result_set,
-            "B": result_set,
-            "C": result_set,
-            "D": result_set,
-            "E": result_set,
-            "F": result_set,
-            "G": result_set,
-            "H": result_set
-        }
+        expected_result = [{"A", "B", "C", "D", "E", "F", "G", "H"}]
         self.assertEqual(create_match_sets(match_dir, "arxiv"), expected_result)
 
     def test_get_combined_map5(self):
@@ -60,16 +32,7 @@ class TestGetCombinedMap(unittest.TestCase):
         match_dir = os.path.join(static_dir, "test_get_combined_map5")
         result_set_large = {"A", "B", "C", "D", "E"}
         result_set_small = {"F", "G", "H"}
-        expected_result = {
-            "A": result_set_large,
-            "B": result_set_large,
-            "C": result_set_large,
-            "D": result_set_large,
-            "E": result_set_large,
-            "F": result_set_small,
-            "G": result_set_small,
-            "H": result_set_small
-        }
+        expected_result = [result_set_small, result_set_large]
         self.assertEqual(create_match_sets(match_dir, "arxiv"), expected_result)
 
 class TestGetBestRecord(unittest.TestCase):

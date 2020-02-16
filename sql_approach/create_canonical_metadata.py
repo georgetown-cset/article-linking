@@ -39,55 +39,42 @@ def is_null(s):
     return len(s.strip()) == 0
 
 
-def create_match_subset(match_fi, dataset):
-    match_set_map = {}
-    for line in open(match_fi):
-        js = json.loads(line)
-        key1 = js[dataset + "1_id"]
-        key2 = js[dataset + "2_id"]
-        if (key1 in match_set_map) and (key2 in match_set_map):
-            set1 = match_set_map[key1]
-            set2 = match_set_map[key2]
-            union = set1.union(set2)
-            for key in union:
-                match_set_map[key] = union
-        elif key1 in match_set_map:
-            match_set_map[key1].add(key2)
-            match_set_map[key2] = match_set_map[key1]
-        elif key2 in match_set_map:
-            match_set_map[key2].add(key1)
-            match_set_map[key1] = match_set_map[key2]
-        else:
-            pair_set = {key1, key2}
-            match_set_map[key1] = pair_set
-            match_set_map[key2] = pair_set
-    return match_set_map
-
-
-def merge_match_sets(match_set1, match_set2):
-    # mutates match_set1
-    for ms in match_set2.values():
-        union = ms
-        for set_key in ms:
-            if set_key in match_set1:
-                union = match_set1[set_key].union(union)
-        for k in union:
-            match_set1[k] = union
-    return match_set1
+def get_connected_edges(adj_list, key, seen):
+    conn_edges = {key}
+    seen.add(key)
+    for v in adj_list[key]:
+        if v not in seen:
+            conn_edges = conn_edges.union(get_connected_edges(adj_list, v, seen))
+    return conn_edges
 
 
 def create_match_sets(match_dir, dataset):
-    print("getting match sets")
-    merged_set = {}
-    with Pool() as p:
-        match_sets = p.starmap(create_match_subset,
-                               [(os.path.join(match_dir, fi), dataset) for fi in os.listdir(match_dir)])
-        print("created all matched sets, now merging")
-        for match_set in tqdm(match_sets):
-            print(match_set)
-            merged_set = merge_match_sets(merged_set, match_set)
-            print(merged_set)
-    return merged_set
+    print("getting adjacency lists")
+    adj_list = {}
+    for fi in tqdm(os.listdir(match_dir)):
+        for line in open(os.path.join(match_dir, fi)):
+            js = json.loads(line)
+            key1 = js[dataset + "1_id"]
+            key2 = js[dataset + "2_id"]
+            if key1 not in adj_list:
+                adj_list[key1] = set()
+            adj_list[key1].add(key2)
+            # even if we're in a scenario where (according to a changed metric) A matches B but B doesn't match A,
+            # this will ensure they get added to the same match set
+            if key2 not in adj_list:
+                adj_list[key2] = set()
+            adj_list[key2].add(key1)
+    seen_ids = set()
+    match_sets = []
+    for k in tqdm(adj_list.keys()):
+        if k in seen_ids:
+            continue
+        # grab every connected article
+        match_set = get_connected_edges(adj_list, k, set())
+        for matched_key in match_set:
+            seen_ids.add(matched_key)
+        match_sets.append(match_set)
+    return match_sets
 
 
 def get_best_record(record_list):
@@ -115,25 +102,17 @@ def get_best_record(record_list):
     return joined_row
 
 
-def combine(match_set_map, meta_map, selected_metadata, match_sets):
+def combine(match_sets, meta_map, selected_metadata, match_sets_out):
     print("merging records")
     out_combined = open(selected_metadata, mode="w")
-    out_matches = open(match_sets, mode="w")
+    out_matches = open(match_sets_out, mode="w")
     # now, write out the merged metadata to one record per match set
-    # keep track of the sets we've seen by their object ids
-    seen_set_ids = set()
-    for key in match_set_map:
-        out_matches.write(json.dumps({"id": key, "matches": match_set_map[key]})+"\n")
-        match_set = match_set_map[key]
-        # check if we've already processed this match set
-        match_set_id = id(match_set)
-        if match_set_id in seen_set_ids:
-            continue
-        seen_set_ids.add(match_set_id)
-
+    for match_set in match_sets:
         meta_record_list = [meta_map[r] for r in match_set]
         best_record = get_best_record(meta_record_list)
         out_combined.write(json.dumps(best_record)+"\n")
+        for match in match_set:
+            out_matches.write(json.dumps({"merged_id": best_record["id"], "orig_id": match})+"\n")
 
 
 if __name__ == "__main__":
@@ -141,10 +120,10 @@ if __name__ == "__main__":
     parser.add_argument("metadata_dir")
     parser.add_argument("match_dir")
     parser.add_argument("selected_metadata")
-    parser.add_argument("match_sets")
+    parser.add_argument("match_sets_out")
     parser.add_argument("dataset")
     args = parser.parse_args()
 
     meta_map = create_metadata_map(args.metadata_dir)
-    match_map = create_match_sets(args.match_dir, args.dataset)
-    combine(match_map, meta_map, args.selected_metadata, args.match_sets)
+    match_sets = create_match_sets(args.match_dir, args.dataset)
+    combine(match_sets, meta_map, args.selected_metadata, args.match_sets_out)
