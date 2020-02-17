@@ -39,12 +39,15 @@ def is_null(s):
     return len(s.strip()) == 0
 
 
-def get_connected_edges(adj_list, key, seen):
+def get_connected_edges(adj_list, key):
     conn_edges = {key}
-    seen.add(key)
-    for v in adj_list[key]:
-        if v not in seen:
-            conn_edges = conn_edges.union(get_connected_edges(adj_list, v, seen))
+    to_explore = list(adj_list[key])
+    while len(to_explore) > 0:
+        v = to_explore[0]
+        to_explore = to_explore[1:]
+        if v not in conn_edges:
+            conn_edges.add(v)
+            to_explore += list(adj_list[v])
     return conn_edges
 
 
@@ -70,7 +73,7 @@ def create_match_sets(match_dir, dataset):
         if k in seen_ids:
             continue
         # grab every connected article
-        match_set = get_connected_edges(adj_list, k, set())
+        match_set = get_connected_edges(adj_list, k)
         for matched_key in match_set:
             seen_ids.add(matched_key)
         match_sets.append(match_set)
