@@ -41,13 +41,12 @@ def is_null(s):
 
 def get_connected_edges(adj_list, key):
     conn_edges = {key}
-    to_explore = list(adj_list[key])
+    to_explore = adj_list[key]
     while len(to_explore) > 0:
-        v = to_explore[0]
-        to_explore = to_explore[1:]
+        v = to_explore.pop()
         if v not in conn_edges:
             conn_edges.add(v)
-            to_explore += list(adj_list[v])
+            to_explore = to_explore.union({k for k in adj_list[v] if k not in conn_edges})
     return conn_edges
 
 
