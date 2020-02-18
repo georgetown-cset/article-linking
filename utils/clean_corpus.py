@@ -31,9 +31,9 @@ class SimpleScrub(beam.DoFn):
                 continue
             value = record[field]
             if type(value) == list:
-                record[field] = [self.clean(v) for v in value]
+                record[field+"_norm"] = [self.clean(v) for v in value]
             else:
-                record[field] = self.clean(value)
+                record[field+"_norm"] = self.clean(value)
         yield record
 
 
