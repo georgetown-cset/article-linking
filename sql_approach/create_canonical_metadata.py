@@ -7,6 +7,10 @@ import os
 from multiprocessing import Pool
 from tqdm import tqdm
 
+'''
+This script contains utilities for generating sets of matched articles from pairs of matched articles, and for
+merging article metadata. 
+'''
 
 def create_metadata_map_subset(meta_fi: str) -> dict:
     '''
@@ -146,12 +150,12 @@ def get_best_record(record_list: list) -> dict:
 
 def combine(match_sets: list, meta_map: dict, selected_metadata: str, match_sets_out: str) -> None:
     '''
-
-    :param match_sets:
-    :param meta_map:
-    :param selected_metadata:
-    :param match_sets_out:
-    :return:
+    Combine match set metadata, and write combined data and matches out
+    :param match_sets: list of matched sets of articles
+    :param meta_map: dict mapping ids to metadata
+    :param selected_metadata: file where selected metadata should be written
+    :param match_sets_out: file where match sets should be written
+    :return: None
     '''
     print("merging records")
     out_combined = open(selected_metadata, mode="w")
