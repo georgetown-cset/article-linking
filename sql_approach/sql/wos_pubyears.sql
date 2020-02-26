@@ -1,1 +1,1 @@
-select id, min(pubyear) as year from gcp_cset_clarivate.wos_summary_latest group by id
+select id, pubyear as year from gcp_cset_clarivate.wos_summary_latest

@@ -8,7 +8,13 @@ from multiprocessing import Pool
 from tqdm import tqdm
 
 
-def create_metadata_map_subset(meta_fi):
+def create_metadata_map_subset(meta_fi: str) -> dict:
+    '''
+    Loads metadata from a jsonl file into a dict. Assumes the presence of an id column, and filters "heavily normalized"
+    fields ("trunc_len_filt"...)
+    :param meta_fi: jsonl file containing metadata to load
+    :return: dict mapping id to metadata
+    '''
     meta_map = {}
     for line in open(meta_fi):
         js = ast.literal_eval(line)
@@ -20,7 +26,12 @@ def create_metadata_map_subset(meta_fi):
     return meta_map
 
 
-def create_metadata_map(meta_dir):
+def create_metadata_map(meta_dir: str) -> dict:
+    '''
+    Creates a metadata map from a directory of jsonl metadata files
+    :param meta_dir: directory of jsonl metadata files
+    :return: dict mapping id to metadata
+    '''
     print("getting metadata maps")
     meta_map = {}
     with Pool() as p:
@@ -31,15 +42,31 @@ def create_metadata_map(meta_dir):
     return meta_map
 
 
-def is_null(s):
+def is_null(s: object) -> bool:
+    '''
+    Our local definition of whether a metadata field is null. We do not consider a false boolean field to be a null.
+    :param s: object
+    :return: a boolean, True if not null
+    '''
     if s is None:
         return True
     if type(s) == list:
         return len(s) == 0
-    return len(s.strip()) == 0
+    if type(s) == bool:
+        return False
+    if type(s) == str:
+        return len(s.strip()) == 0
+    raise ValueError(type(s))
 
 
-def get_connected_edges(adj_list, key):
+def get_connected_edges(adj_list: dict, key: str) -> set:
+    '''
+    Given a dict where a key-value pair corresponds to an article match and a particular article `key`,
+    returns a set of articles matched to `key`.
+    :param adj_list: a dict of key-value pairs corresponding to matched articles
+    :param key: an article to match in `adj_list`
+    :return: a set of matched articles
+    '''
     conn_edges = {key}
     to_explore = adj_list[key]
     while len(to_explore) > 0:
@@ -50,7 +77,14 @@ def get_connected_edges(adj_list, key):
     return conn_edges
 
 
-def create_match_sets(match_dir, dataset):
+def create_match_sets(match_dir: str, dataset: str) -> list:
+    '''
+    Given a directory of exported jsonl files containing article matches, generates a list of sets of matched articles,
+    including "transitive matches".
+    :param match_dir: directory of exported jsonl files containing article matches, with keys "`dataset`1_id" and "`dataset`2_id"
+    :param dataset: dataset to match in key names
+    :return: list of sets of matched articles
+    '''
     print("getting adjacency lists")
     adj_list = {}
     for fi in tqdm(os.listdir(match_dir)):
@@ -79,7 +113,13 @@ def create_match_sets(match_dir, dataset):
     return match_sets
 
 
-def get_best_record(record_list):
+def get_best_record(record_list: list) -> dict:
+    '''
+    Given a list of matched articles' metadata, returns a merged metadata record, preferentially keeping metadata
+    from an article with the fewest nulls
+    :param record_list: a list of matched articles' metadata
+    :return: a dict of merged metadata
+    '''
     min_null_row = None
     min_nulls = 100000000
     row_meta_possibilities = {}
@@ -104,7 +144,15 @@ def get_best_record(record_list):
     return joined_row
 
 
-def combine(match_sets, meta_map, selected_metadata, match_sets_out):
+def combine(match_sets: list, meta_map: dict, selected_metadata: str, match_sets_out: str) -> None:
+    '''
+
+    :param match_sets:
+    :param meta_map:
+    :param selected_metadata:
+    :param match_sets_out:
+    :return:
+    '''
     print("merging records")
     out_combined = open(selected_metadata, mode="w")
     out_matches = open(match_sets_out, mode="w")

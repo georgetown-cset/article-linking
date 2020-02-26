@@ -3,5 +3,5 @@ from {DATASET}.{TABLE1}_metadata_norm a
 inner join
 {DATASET}.{TABLE1}_metadata_norm m
 on ((a.year = m.year) and (a.year is not null) and
-   (a.abstract_trunc_norm_len_filt = m.abstract_trunc_norm_len_filt) and
-   (m.abstract_trunc_norm_len_filt is not null) and (a.abstract_trunc_norm_len_filt != ""))
+   (a.abstract_norm = m.abstract_norm) and
+   (m.abstract_norm is not null) and (a.abstract_norm != ""))

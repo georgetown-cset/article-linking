@@ -7,6 +7,7 @@ static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 class TestGetCombinedMap(unittest.TestCase):
     maxDiff = None
 
+    # TODO: refactor to read expected outputs from file too and eliminate the boilerplate
     def test_get_combined_map1(self):
         match_dir = os.path.join(static_dir, "test_get_combined_map1")
         expected_result = [{"A", "B", "C"}]
@@ -37,6 +38,7 @@ class TestGetCombinedMap(unittest.TestCase):
 
 class TestGetBestRecord(unittest.TestCase):
     def test_get_best_record(self):
+        # test that the longest record gets chosen as the base, and the null fields get populated from other records
         record_list = [
             {"id": "A", "title": "", "abstract": "", "foo": "bar"},
             {"id": "B", "title": None, "abstract": None, "foo": ""},

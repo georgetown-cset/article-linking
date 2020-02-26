@@ -10,3 +10,4 @@ wos_abstracts	sql/wos_abstracts.sql	0
 wos_pubyears	sql/wos_pubyears.sql	0
 wos_titles	sql/wos_titles.sql	0
 wos_metadata	sql/wos_metadata.sql	0
+all_metadata	sql/union_metadata.sql	0

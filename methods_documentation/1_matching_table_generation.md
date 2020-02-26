@@ -10,15 +10,18 @@ within-dataset merge, and then drop it when doing cross-dataset merges.
 
 For two articles A and B to be considered a match, we require that at least three of the following be true:
 
-- A and B have the same normalized title (by either method)
-- A and B have the same normalized abstract (by either method)
-- A and B have the same pubyear
-- A and B have the same normalized author last names (by either method)
-- A and B have the same references (if from the same dataset)
-- A and B have the same DOI
+- A and B have the same (not null or empty) normalized title
+- A and B have the same (not null or empty) normalized abstract
+- A and B have the same (not null or empty) pubyear
+- A and B have the same (not null or empty) normalized author last names
+- A and B have the same (not null or empty) references (if from the same dataset)
+- A and B have the same (not null or empty) DOI
 
-To construct these matches, we did the following set of queries:
+To construct these matches, we did the set of queries listed in `sequences/generate_metadata.tsv`
 
-Resulting in a match table which we will use in the
+Run: `python3 generate_tables.py <your dataset name> sequences/generate_metadata.tsv`
+
+This results in a match table of pairs of matched documents (including self-matches) which we will use 
+in the
 
 \>> [Next Section](methods_documentation/2_merged_table_generation.md)
