@@ -1,5 +1,5 @@
 select
-  a.merge_id,
+  a.merged_id,
   b.title,
   b.abstract,
   b.year,

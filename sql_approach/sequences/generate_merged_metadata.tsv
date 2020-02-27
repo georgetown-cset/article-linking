@@ -1,2 +1,3 @@
 article_links_with_meta	sql/cat_article_links_to_meta.sql	0
-merged_meta	sql/merged_metadata.sql	0
+merged_article_meta	sql/merged_metadata.sql	0
+article_links_with_dataset	sql/add_article_dataset.sql	0
