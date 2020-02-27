@@ -1,4 +1,5 @@
 # Article Linking
+![Python application](https://github.com/georgetown-cset/article-linking/workflows/Python%20application/badge.svg)
 
 This repository contains a description and supporting code for CSET's current method of 
 cross-dataset article linking. The documentation comes in five parts: 
