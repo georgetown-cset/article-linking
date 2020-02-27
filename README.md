@@ -1,7 +1,7 @@
 # Article Linking
 
 This repository contains a description and supporting code for CSET's current method of 
-cross-dataset article linking. There are five parts:
+cross-dataset article linking. The documentation comes in five parts: 
 
 1.) [Metadata generation](methods_documentation/0_metadata_table_generation.md). This section describes
 how we put a subset of metadata across arXiv, Web of Science, Dimensions, and Microsoft Academic
