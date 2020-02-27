@@ -1,6 +1,6 @@
 import unittest
 import os
-from ..create_canonical_metadata import create_match_sets, get_best_record
+from create_canonical_metadata import create_match_sets, get_best_record
 
 static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 

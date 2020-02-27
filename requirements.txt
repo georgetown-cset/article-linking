@@ -1,1 +1,4 @@
 apache-beam[gcp]
+gensim
+pytest
+tqdm

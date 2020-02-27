@@ -1,6 +1,6 @@
 import json
 import unittest
-from ..utils.clean_corpus import Scrub
+from utils.clean_corpus import Scrub
 
 
 class TestCleanCorpus(unittest.TestCase):
