@@ -33,8 +33,9 @@ class TestGetCombinedMap(unittest.TestCase):
         match_dir = os.path.join(static_dir, "test_get_combined_map5")
         result_set_large = {"A", "B", "C", "D", "E"}
         result_set_small = {"F", "G", "H"}
-        expected_result = [result_set_small, result_set_large]
-        self.assertEqual(create_match_sets(match_dir, "arxiv"), expected_result)
+        expected_result = sorted([result_set_small, result_set_large], key=lambda k : len(k))
+        actual_result = sorted(create_match_sets(match_dir, "arxiv"), key=lambda k : len(k))
+        self.assertEqual(actual_result, expected_result)
 
 class TestGetBestRecord(unittest.TestCase):
     def test_get_best_record(self):
