@@ -5,8 +5,9 @@ import re
 from google.cloud import bigquery
 
 '''
-This script is used to programmatically populate "sequence files" as described in `get_sql_sequence`. 
-We populate the table name and the sql script with table references.
+This script is used to convert "sequence files" as described in `get_sql_sequence` below into sets of queries to run;
+it then runs those queries and puts the outputs in tables specified in the sequence file. This allows us to write a 
+query once, and then programmatically populate it with combinations of datasets and tables as needed.
 '''
 
 
@@ -52,7 +53,7 @@ def get_ascending_tuples(elts: list, tuple_size: int) -> list:
 
 def get_sql_sequence(sql_sequence_file: str, dataset_name: str, corpora: list, self_match: bool) -> list:
     '''
-    Parses a sql sequence file. Sequence files are tab-separated files containing three columns:
+    Parses a sql sequence file. Sequence files are headerless tab-separated files containing three columns:
         1.) A table name
         2.) A reference to a sql script that should be run to generate that table
         3.) The number of tables that should be passed into the script (0 if no dynamic table references, 1 for only one
@@ -66,7 +67,7 @@ def get_sql_sequence(sql_sequence_file: str, dataset_name: str, corpora: list, s
     '''
     table_queries = []
     for line in open(sql_sequence_file):
-        # we're using -- at the start of a line as a comment indicator
+        # we use '--' at the start of a line to indicate that the line should be interpreted as a comment
         if len(line.strip()) == 0 or line.startswith("--"):
             continue
         table_name, query_file, num_tables_str = line.strip().split("\t")
