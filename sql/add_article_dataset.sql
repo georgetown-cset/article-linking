@@ -1,4 +1,4 @@
-select
+select distinct
   a.merged_id,
   a.orig_id,
   b.dataset
