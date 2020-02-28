@@ -59,7 +59,7 @@ class Scrub(beam.DoFn):
         return [x.strip().lower() for x in clean_string_parts]
 
     @staticmethod
-    def clean_doi(doi: str):
+    def clean_doi(doi: str) -> str:
         '''
         Clean DOI. At the moment, all we do is downcase it.
         :param doi: doi string
@@ -67,7 +67,7 @@ class Scrub(beam.DoFn):
         '''
         return doi.lower()
 
-    def process(self, record_str):
+    def process(self, record_str) -> iter:
         '''
         Load a jsonl-formatted line as json, then clean its fields
         :param record_str: jsonl-formatted string
