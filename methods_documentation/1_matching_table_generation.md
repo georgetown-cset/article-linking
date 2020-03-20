@@ -18,9 +18,9 @@ For two articles A and B to be considered a match, we require that at least thre
 - A and B have the same (not null or empty) references (if from the same dataset)
 - A and B have the same (not null or empty) DOI
 
-To construct these matches, we did the set of queries listed in `sequences/generate_metadata.tsv`
+To construct these matches, we did the set of queries listed in `sequences/generate_self_triples.tsv`
 
-From the project root, run: `python3 generate_tables.py <your dataset name> sequences/generate_metadata.tsv`
+From the project root, run: `python3 generate_tables.py <your dataset name> sequences/generate_self_triples.tsv`
 
 This results in a match table of pairs of matched documents (including self-matches) which we will use 
 in the
