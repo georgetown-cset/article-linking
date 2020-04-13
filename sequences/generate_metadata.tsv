@@ -10,4 +10,8 @@ wos_abstracts	sql/wos_abstracts.sql	0
 wos_pubyears	sql/wos_pubyears.sql	0
 wos_titles	sql/wos_titles.sql	0
 wos_metadata	sql/wos_metadata.sql	0
+cnki_year_doi_authors	sql/cnki_year_doi_authors.sql	0
+cnki_title	sql/cnki_title.sql	0
+cnki_abstract	sql/cnki_abstract.sql	0
+cnki_metadata	sql/cnki_metadata.sql	0
 all_metadata	sql/union_metadata.sql	0

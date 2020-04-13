@@ -12,4 +12,8 @@ select cast(id as string) as id, title, abstract, clean_doi, cast(year as int64)
 UNION ALL
 select cast(id as string) as id, title, abstract, clean_doi, cast(year as int64), last_names, references,
   "mag" as dataset
-  from {DATASET}.mag_metadata
+from {DATASET}.mag_metadata
+UNION ALL
+select cast(id as string) as id, title, abstract, clean_doi, cast(year as int64), last_names, references,
+  "cnki" as dataset
+from {DATASET}.cnki_metadata
