@@ -7,21 +7,21 @@ SELECT
   d.last_names,
   e.references
 FROM
-  {DATASET}.wos_ids ids
+  {{params.dataset}}.wos_ids ids
 LEFT JOIN
-  {DATASET}.wos_pubyears a
+  {{params.dataset}}.wos_pubyears a
 ON
   ids.id = a.id
 LEFT JOIN
-  {DATASET}.wos_titles b
+  {{params.dataset}}.wos_titles b
 ON
   ids.id = b.id
 LEFT JOIN
-  {DATASET}.wos_abstracts c
+  {{params.dataset}}.wos_abstracts c
 ON
   ids.id = c.id
 LEFT JOIN
-  {DATASET}.wos_authors d
+  {{params.dataset}}.wos_authors d
 ON
   ids.id = d.id
 LEFT JOIN
