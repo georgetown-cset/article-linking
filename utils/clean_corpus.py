@@ -104,9 +104,9 @@ def run_pipeline(input_dir: str, output_dir: str, fields_to_clean: list, pipelin
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("input_dir")
-    parser.add_argument("output_dir")
-    parser.add_argument("fields_to_clean",
+    parser.add_argument("--input_dir", required=True)
+    parser.add_argument("--output_dir", required=True)
+    parser.add_argument("--fields_to_clean", required=True,
                         help="comma-separated list of fields that should be cleaned within each record")
     args, pipeline_args = parser.parse_known_args()
 

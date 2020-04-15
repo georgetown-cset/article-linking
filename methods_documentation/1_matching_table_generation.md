@@ -20,7 +20,7 @@ For two articles A and B to be considered a match, we require that at least thre
 
 To construct these matches, we did the set of queries listed in `sequences/generate_self_triples.tsv`
 
-From the project root, run: `python3 generate_tables.py <your dataset name> sequences/generate_self_triples.tsv`
+From the project root, run: `python3 generate_tables.py <your dataset name> sequences/generate_self_triples.tsv  --corpora all --self_match`
 
 This results in a match table of pairs of matched documents (including self-matches) which we will use 
 in the

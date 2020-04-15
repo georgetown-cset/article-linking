@@ -4,8 +4,7 @@ select
   c.abstract,
   a.clean_doi,
   a.year,
-  a.last_names,
-  null as references
+  a.last_names
 from
   {{params.dataset}}.cnki_year_doi_authors a
 inner join
