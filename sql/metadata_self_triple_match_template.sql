@@ -1,41 +1,41 @@
 select distinct * from (
-select * from {{params.dataset}}.all_all_year_title_abstract
+select * from {{params.dataset}}.year_title_abstract
 union all
-select * from {{params.dataset}}.all_all_year_title_author
+select * from {{params.dataset}}.year_title_author
 union all
-select * from {{params.dataset}}.all_all_year_title_references
+select * from {{params.dataset}}.year_title_references
 union all
-select * from {{params.dataset}}.all_all_year_title_doi
+select * from {{params.dataset}}.year_title_doi
 union all
-select * from {{params.dataset}}.all_all_year_abstract_author
+select * from {{params.dataset}}.year_abstract_author
 union all
-select * from {{params.dataset}}.all_all_year_abstract_references
+select * from {{params.dataset}}.year_abstract_references
 union all
-select * from {{params.dataset}}.all_all_year_abstract_doi
+select * from {{params.dataset}}.year_abstract_doi
 union all
-select * from {{params.dataset}}.all_all_year_author_references
+select * from {{params.dataset}}.year_author_references
 union all
-select * from {{params.dataset}}.all_all_year_author_doi
+select * from {{params.dataset}}.year_author_doi
 union all
-select * from {{params.dataset}}.all_all_year_references_doi
+select * from {{params.dataset}}.year_references_doi
 union all
-select * from {{params.dataset}}.all_all_title_abstract_author
+select * from {{params.dataset}}.title_abstract_author
 union all
-select * from {{params.dataset}}.all_all_title_abstract_references
+select * from {{params.dataset}}.title_abstract_references
 union all
-select * from {{params.dataset}}.all_all_title_abstract_doi
+select * from {{params.dataset}}.title_abstract_doi
 union all
-select * from {{params.dataset}}.all_all_title_author_references
+select * from {{params.dataset}}.title_author_references
 union all
-select * from {{params.dataset}}.all_all_title_author_doi
+select * from {{params.dataset}}.title_author_doi
 union all
-select * from {{params.dataset}}.all_all_title_references_doi
+select * from {{params.dataset}}.title_references_doi
 union all
-select * from {{params.dataset}}.all_all_abstract_author_references
+select * from {{params.dataset}}.abstract_author_references
 union all
-select * from {{params.dataset}}.all_all_abstract_author_doi
+select * from {{params.dataset}}.abstract_author_doi
 union all
-select * from {{params.dataset}}.all_all_abstract_references_doi
+select * from {{params.dataset}}.abstract_references_doi
 union all
-select * from {{params.dataset}}.all_all_author_references_doi
+select * from {{params.dataset}}.author_references_doi
 )
