@@ -1,5 +1,0 @@
-{TABLE1}_{TABLE2}_abstract_author	sql/abstract_author_template.sql	2
-{TABLE1}_{TABLE2}_abstract_title	sql/abstract_title_min_3_template.sql	2
-{TABLE1}_{TABLE2}_abstract_year	sql/abstract_year_template.sql	2
-{TABLE1}_{TABLE2}_title_author	sql/title_min_3_author_template.sql	2
-{TABLE1}_{TABLE2}_title_year	sql/title_min_3_year_template.sql	2

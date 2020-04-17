@@ -1,7 +1,0 @@
-experiment_name,precision,recall,f1
-triple_test_one_null_allowed.arxiv_wos_dois_matched,0.9963096880008946,0.5428028489780524,0.7027422935204348
-triple_test_one_null_allowed.arxiv_ds_dois_matched,0.09166498931286003,0.04235638534633381,0.057939975917665684
-triple_test_one_null_allowed.arxiv_mag_dois_matched,0.9335734605854823,0.490082160896616,0.642750524797781
-triple_test_one_null_allowed.wos_ds_dois_matched,0.9965091627554277,0.82901670894332,0.9050791986537198
-triple_test_one_null_allowed.wos_mag_dois_matched,0.9959873816498914,0.7978655967467013,0.8859857259010971
-triple_test_one_null_allowed.ds_mag_dois_matched,0.9974593208293696,0.8150836537696489,0.8970962885865418
