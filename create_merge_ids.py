@@ -97,7 +97,6 @@ if __name__ == "__main__":
     parser.add_argument("--match_dir", required=True,
                         help="directory of exported jsonl from bigquery containing pairs of article matches")
     parser.add_argument("--merge_file", required=True, help="file where merged ids should be written")
-    # TODO: get rid of the need for this arg
     parser.add_argument("--prev_id_mapping_dir",
                         help="directory of exported jsonl from bigquery containing pairs of article matches")
     args = parser.parse_args()

@@ -41,6 +41,9 @@ gsutil cp sql/author_references_doi_template_self.sql  gs://us-east1-etl-05d83c6
 gsutil cp sql/metadata_self_triple_match_template.sql  gs://us-east1-etl-05d83c6e-bucket/dags/sql/article_linkage/
 gsutil cp sql/all_match_pairs_with_um.sql  gs://us-east1-etl-05d83c6e-bucket/dags/sql/article_linkage/
 gsutil cp sql/simhash_input.sql gs://us-east1-etl-05d83c6e-bucket/dags/sql/article_linkage/
+gsutil cp sql/article_links_with_meta.sql gs://us-east1-etl-05d83c6e-bucket/dags/sql/article_linkage/
+gsutil cp sql/article_merged_meta.sql gs://us-east1-etl-05d83c6e-bucket/dags/sql/article_linkage/
+gsutil cp sql/article_links_with_dataset.sql gs://us-east1-etl-05d83c6e-bucket/dags/sql/article_linkage/
 gsutil cp schemas/metadata.json gs://airflow-data-exchange/article_linkage/schemas/
 gsutil cp schemas/links_table.json gs://airflow-data-exchange/article_linkage/schemas/
 gsutil cp create_merge_ids.py gs://airflow-data-exchange/article_linkage/vm_scripts/

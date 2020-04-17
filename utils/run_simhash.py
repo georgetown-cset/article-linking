@@ -21,7 +21,6 @@ def write_sim_strings(data_ids_and_values: list, output_fi: str) -> None:
     '''
     Does the similarity matching and writes out the outputs. Basic method from from https://github.com/leonsim/simhash
     '''
-
     objs = [(article_id, Simhash(get_features(article_text))) for article_id, article_text in data_ids_and_values]
     index = SimhashIndex(objs, k=3)
 
@@ -41,13 +40,14 @@ def get_year_partition(input_dir: str) -> dict:
     :param input_dir: directory of jsonl
     :return: dict mapping year to tuples of id, normalized_text
     '''
+    print("getting year partition")
     year_to_data_tuples = {}
     for fi in os.listdir(input_dir):
-        if not fi.endswith(".jsonl"):
-            continue
-        if fi["year"] not in year_to_data_tuples:
-            year_to_data_tuples[fi["year"]] = []
-        year_to_data_tuples[fi["year"]].append((fi["id"], fi["normalized_text"]))
+        for line in open(os.path.join(input_dir, fi)):
+            js = json.loads(line)
+            if js["year"] not in year_to_data_tuples:
+                year_to_data_tuples[js["year"]] = []
+            year_to_data_tuples[js["year"]].append((js["id"], js["normalized_text"]))
     return year_to_data_tuples
 
 
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     year_partition = get_year_partition(args.input_dir)
+    print("running simhash")
     with multiprocessing.Pool() as p:
-        for part in year_partition:
-            p.starmap(write_sim_strings,
-                      [(part, os.path.join(args.output_dir, year+".jsonl")) for year, part in year_partition.items()])
+        p.starmap(write_sim_strings,
+            [(part, os.path.join(args.output_dir, year+".jsonl")) for year, part in year_partition.items()])
