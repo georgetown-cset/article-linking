@@ -62,4 +62,4 @@ if __name__ == "__main__":
     with multiprocessing.Pool() as p:
         for part in year_partition:
             p.starmap(write_sim_strings,
-                      [(part, os.path.join(args.output_dir, year+".jsonl") for year, part in year_partition.items())])
+                      [(part, os.path.join(args.output_dir, year+".jsonl")) for year, part in year_partition.items()])
