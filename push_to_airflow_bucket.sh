@@ -1,5 +1,6 @@
 gsutil cp linkage_dag.py gs://us-east1-etl-05d83c6e-bucket/dags/
 gsutil cp utils/clean_corpus.py gs://us-east1-etl-05d83c6e-bucket/dags/linkage_scripts/
+gsutil cp utils/run_lid.py gs://us-east1-etl-05d83c6e-bucket/dags/linkage_scripts/
 gsutil cp sql/arxiv_authors.sql gs://us-east1-etl-05d83c6e-bucket/dags/sql/article_linkage/
 gsutil cp sql/arxiv_metadata.sql gs://us-east1-etl-05d83c6e-bucket/dags/sql/article_linkage/
 gsutil cp sql/ds_authors.sql gs://us-east1-etl-05d83c6e-bucket/dags/sql/article_linkage/
@@ -38,5 +39,9 @@ gsutil cp sql/abstract_author_doi_template_self.sql  gs://us-east1-etl-05d83c6e-
 gsutil cp sql/abstract_references_doi_template_self.sql  gs://us-east1-etl-05d83c6e-bucket/dags/sql/article_linkage/
 gsutil cp sql/author_references_doi_template_self.sql  gs://us-east1-etl-05d83c6e-bucket/dags/sql/article_linkage/
 gsutil cp sql/metadata_self_triple_match_template.sql  gs://us-east1-etl-05d83c6e-bucket/dags/sql/article_linkage/
-gsutil cp sql/unmatchable_match_template.sql  gs://us-east1-etl-05d83c6e-bucket/dags/sql/article_linkage/
+gsutil cp sql/all_match_pairs_with_um.sql  gs://us-east1-etl-05d83c6e-bucket/dags/sql/article_linkage/
+gsutil cp sql/simhash_input.sql gs://us-east1-etl-05d83c6e-bucket/dags/sql/article_linkage/
 gsutil cp schemas/metadata.json gs://airflow-data-exchange/article_linkage/schemas/
+gsutil cp schemas/links_table.json gs://airflow-data-exchange/article_linkage/schemas/
+gsutil cp create_merge_ids.py gs://airflow-data-exchange/article_linkage/vm_scripts/
+gsutil cp utils/run_simhash.py gs://airflow-data-exchange/article_linkage/vm_scripts/

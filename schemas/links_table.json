@@ -1,0 +1,12 @@
+[
+  {
+    "mode": "REQUIRED",
+    "name": "merged_id",
+    "type": "STRING"
+  },
+  {
+    "mode": "REQUIRED",
+    "name": "orig_id",
+    "type": "STRING"
+  }
+]
