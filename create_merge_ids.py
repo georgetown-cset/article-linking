@@ -72,24 +72,50 @@ def create_match_sets(match_dir: str) -> list:
     return match_sets
 
 
-def create_match_keys(match_sets: list, match_file: str):
+def create_match_keys(match_sets: list, match_file: str, prev_id_mapping_dir: str = None):
     '''
     Given a match set, creates an id for that match set, and writes out a jsonl mapping each article in the match
     set to that id
     :param match_sets: list of match sets
     :param match_file: file where id mapping should be written
+    :param prev_id_mapping_dir: optional dir containing previous id mappings in jsonl form
     :return: None
     '''
     match_id = 0
     out = open(match_file, mode="w")
+    prev_orig_to_merg = {}
+    max_merg = "carticle_0"
+    if prev_id_mapping_dir is not None:
+        for fi in os.listdir(prev_id_mapping_dir):
+            for line in open(os.path.join(prev_id_mapping_dir, fi)):
+                js = json.loads(line.strip())
+                orig_id = js["orig_id"]
+                merg_id = js["merged_id"]
+                assert orig_id not in prev_orig_to_merg
+                prev_orig_to_merg[orig_id] = merg_id
+                if merg_id > max_merg:
+                    max_merg = merg_id
+    match_id = int(max_merg.split("carticle_")[1])+1
+    num_new, num_old = 0, 0
     for ms in tqdm(match_sets):
-        cset_article_id = create_cset_article_id(match_id)
-        match_id += 1
+        cset_article_id = None
+        # if we have exactly one existing id, reuse it, even if new articles are matched to it.
+        # if two articles that previously had different carticle ids are now in the same match set, 
+        # create a new carticle id
+        existing_ids = set([prev_orig_to_merg[m] for m in ms if m in prev_orig_to_merg])
+        if len(existing_ids) == 1:
+            cset_article_id = existing_ids.pop()
+            num_old += 1
+        else:
+            cset_article_id = create_cset_article_id(match_id)
+            num_new += 1
+            match_id += 1
         for article in ms:
             out.write(json.dumps({
                 "merged_id": cset_article_id,
                 "orig_id": article
             })+"\n")
+    print(f"wrote {num_new} new ids and reused {num_old} ids")
 
 
 if __name__ == "__main__":
@@ -102,4 +128,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     match_sets = create_match_sets(args.match_dir)
-    create_match_keys(match_sets, args.merge_file)
+    create_match_keys(match_sets, args.merge_file, args.prev_id_mapping_dir)
