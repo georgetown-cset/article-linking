@@ -37,20 +37,40 @@ def get_connected_edges(adj_list: dict, key: str) -> set:
     return conn_edges
 
 
-def create_match_sets(match_dir: str) -> list:
+def get_usable_ids(ids_dir: str) -> set:
+    '''
+    Get the set of usable ids from a directory of jsonl, or returns None if ids_dir is None
+    :param ids_dir: None or name of a directory containing jsonl with one key, "id", which are the ids we want to keep
+    :return: the set of usable ids, or None
+    '''
+    if ids_dir is None:
+        return None
+    usable_ids = set()
+    for fi in os.listdir(ids_dir):
+        for line in open(os.path.join(ids_dir, fi)):
+            js = json.loads(line)
+            usable_ids.add(js["id"])
+    return usable_ids
+
+
+def create_match_sets(match_dir: str, current_ids_dir: str = None) -> list:
     '''
     Given a directory of exported jsonl files containing article matches, generates a list of sets of matched articles,
     including "transitive matches".
     :param match_dir: directory of exported jsonl files containing article matches, with keys "`dataset`1_id" and "`dataset`2_id"
+    :param current_ids_dir: optional dir containing the current set of ids to use in jsonl form. If None, all ids will be used
     :return: list of sets of matched articles
     '''
     print("getting adjacency lists")
     adj_list = {}
+    usable_ids = get_usable_ids(current_ids_dir)
     for fi in tqdm(os.listdir(match_dir)):
         for line in open(os.path.join(match_dir, fi)):
             js = json.loads(line)
             key1 = js["id1"]
             key2 = js["id2"]
+            if (usable_ids is not None) and ((key1 not in usable_ids) or (key2 not in usable_ids)):
+                continue
             if key1 not in adj_list:
                 adj_list[key1] = set()
             adj_list[key1].add(key2)
@@ -81,7 +101,6 @@ def create_match_keys(match_sets: list, match_file: str, prev_id_mapping_dir: st
     :param prev_id_mapping_dir: optional dir containing previous id mappings in jsonl form
     :return: None
     '''
-    match_id = 0
     out = open(match_file, mode="w")
     prev_orig_to_merg = {}
     max_merg = "carticle_0"
@@ -125,7 +144,10 @@ if __name__ == "__main__":
     parser.add_argument("--merge_file", required=True, help="file where merged ids should be written")
     parser.add_argument("--prev_id_mapping_dir",
                         help="directory of exported jsonl from bigquery containing pairs of article matches")
+    parser.add_argument("--current_ids_dir", help=("directory containing jsonl with one key, 'id'. "
+                                                   "These are the ids that should be included in output. "
+                                                   "If None, no ids will be filtered."))
     args = parser.parse_args()
 
-    match_sets = create_match_sets(args.match_dir)
+    match_sets = create_match_sets(args.match_dir, args.current_ids_dir)
     create_match_keys(match_sets, args.merge_file, args.prev_id_mapping_dir)

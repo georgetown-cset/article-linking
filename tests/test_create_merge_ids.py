@@ -39,6 +39,18 @@ class TestGetCombinedMap(unittest.TestCase):
         actual_result = sorted(create_match_sets(match_dir), key=lambda k : len(k))
         self.assertEqual(actual_result, expected_result)
 
+    def test_get_match_sets_with_extra_id(self):
+        # test with three disconnected sets. The set A - E will have one extra id (E) that should get filtered, and
+        # the "small" set F-H will all be extra ids that should be filtered. The other small set I-J will have ids
+        # distributed across two id files, but the set should be included.
+        match_dir = os.path.join(static_dir, "test_get_match_sets_with_extra_id", "match_pairs")
+        ids_dir = os.path.join(static_dir, "test_get_match_sets_with_extra_id", "ids")
+        result_set_large = {"A", "B", "C", "D"}
+        result_set_small = {"I", "J"}
+        expected_result = sorted([result_set_small, result_set_large], key=lambda k : len(k))
+        actual_result = sorted(create_match_sets(match_dir, ids_dir), key=lambda k : len(k))
+        self.assertEqual(actual_result, expected_result)
+
     def test_create_match_keys(self):
         # the first set will contain two old elts from the same match set and one new elt; should keep its id
         # the next will contain one elt from one match set, two from another; should change ids
