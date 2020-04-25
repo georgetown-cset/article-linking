@@ -1,0 +1,82 @@
+[
+  {
+    "mode": "NULLABLE", 
+    "name": "id", 
+    "type": "STRING"
+  }, 
+  {
+    "mode": "NULLABLE", 
+    "name": "title", 
+    "type": "STRING"
+  }, 
+  {
+    "mode": "NULLABLE", 
+    "name": "title_cld2_lid_success", 
+    "type": "BOOLEAN"
+  },
+  {
+    "mode": "NULLABLE", 
+    "name": "title_cld2_lid_is_reliable", 
+    "type": "BOOLEAN"
+  },
+  {
+    "mode": "NULLABLE", 
+    "name": "title_cld2_lid_first_result", 
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE", 
+    "name": "title_cld2_lid_first_result_short_code", 
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE", 
+    "name": "abstract", 
+    "type": "STRING"
+  }, 
+  {
+    "mode": "NULLABLE", 
+    "name": "abstract_cld2_lid_success", 
+    "type": "BOOLEAN"
+  },
+  {
+    "mode": "NULLABLE", 
+    "name": "abstract_cld2_lid_is_reliable", 
+    "type": "BOOLEAN"
+  },
+  {
+    "mode": "NULLABLE", 
+    "name": "abstract_cld2_lid_first_result", 
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE", 
+    "name": "abstract_cld2_lid_first_result_short_code", 
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE", 
+    "name": "clean_doi", 
+    "type": "STRING"
+  }, 
+  {
+    "mode": "NULLABLE", 
+    "name": "year", 
+    "type": "INTEGER"
+  }, 
+  {
+    "mode": "REPEATED", 
+    "name": "last_names", 
+    "type": "STRING"
+  }, 
+  {
+    "mode": "NULLABLE", 
+    "name": "references", 
+    "type": "STRING"
+  }, 
+  {
+    "mode": "NULLABLE", 
+    "name": "dataset", 
+    "type": "STRING"
+  }
+]
