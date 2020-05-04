@@ -2,7 +2,7 @@ select distinct
   a.merged_id,
   a.orig_id,
   b.dataset
-from {DATASET}.article_links a
+from {{params.dataset}}.article_links a
 left join
-{DATASET}.all_metadata b
+{{params.dataset}}.union_metadata b
 on a.orig_id = b.id

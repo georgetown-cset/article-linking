@@ -44,7 +44,7 @@ class LangId(beam.DoFn):
                 record[field + "_cld2_lid_first_result"] = details[0][0]
                 record[field + "_cld2_lid_first_result_short_code"] = details[0][1]
                 # convert from tuple
-                record[field + "_cld2_lid_details"] = [list(d) for d in details]
+                #record[field + "_cld2_lid_details"] = [list(d) for d in details]
             except cld2.error as e:
                 logging.warning(e)
             except UnicodeDecodeError as e:
@@ -74,8 +74,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_dir", required=True)
     parser.add_argument("--output_dir", required=True)
-    parser.add_argument("--fields_to_translate", required=True,
-                        help="comma-separated list of fields that should be translated")
+    parser.add_argument("--fields_to_lid", required=True,
+                        help="comma-separated list of fields that should have lid run on them")
     args, pipeline_args = parser.parse_known_args()
 
-    run_pipeline(args.input_dir, args.output_dir, args.fields_to_clean.split(","), pipeline_args)
+    run_pipeline(args.input_dir, args.output_dir, args.fields_to_lid.split(","), pipeline_args)
