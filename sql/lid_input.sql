@@ -1,1 +1,1 @@
-select id, title, abstract, clean_doi, year, last_names, references from {{params.datset}}.all_metadata_norm
+select id, title, abstract, clean_doi, year, last_names, references, dataset from {{params.dataset}}.all_metadata_norm

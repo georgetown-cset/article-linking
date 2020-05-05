@@ -3,6 +3,7 @@ import itertools
 import json
 import multiprocessing
 import os
+import pickle
 import re
 from simhash import Simhash, SimhashIndex
 
@@ -17,13 +18,20 @@ def get_features(s: str) -> list:
     return [s[i:i + width] for i in range(max(len(s) - width + 1, 1))]
 
 
-def write_sim_strings(data_fi: str, output_fi: str) -> None:
+def write_sim_strings(data_fi: str, output_fi: str, input_index: str = None, output_index: str = None) -> None:
     '''
     Does the similarity matching and writes out the outputs. Basic method from from https://github.com/leonsim/simhash
     '''
     data_ids_and_values = [line.strip().split("\t") for line in open(data_fi).readlines()]
     objs = [(article_id, Simhash(get_features(article_text))) for article_id, article_text in data_ids_and_values]
-    index = SimhashIndex(objs, k=3)
+    index = None
+    if input_index is None:
+        index = SimhashIndex(objs, k=3)
+    else:
+        index = pickle.load(open(input_index, mode="rb"))
+        for obj_id, obj in objs:
+            index.add(obj_id, obj)
+        open(output_index, mode="wb").write(pickle.dumps(index))
 
     out = open(output_fi, mode="w")
     for article_id, article_text in data_ids_and_values:
@@ -65,6 +73,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input_dir", help="directory of jsonl")
     parser.add_argument("--tmp_dir", default="simhash-tmp")
+    parser.add_argument("--simhash_indexes", help="current simhash indexes")
+    parser.add_argument("--new_simhash_indexes", help="location where updated indexes should be written")
     parser.add_argument("output_dir", help=("directory where output matches should be written. "
                                             "Outputs will be in the form `year`.jsonl"))
     args = parser.parse_args()
@@ -73,4 +83,7 @@ if __name__ == "__main__":
     print("running simhash")
     with multiprocessing.Pool() as p:
         p.starmap(write_sim_strings,
-            [(os.path.join(args.tmp_dir, year+".tsv"), os.path.join(args.output_dir, year+".jsonl")) for year in years])
+            [(os.path.join(args.tmp_dir, year+".tsv"), os.path.join(args.output_dir, year+".jsonl"),
+              None if args.simhash_indexes is None else os.path.join(args.simhash_indexes, f"{year}.pkl"),
+              None if args.new_simhash_indexes is None else os.path.join(args.new_simhash_indexes, f"{year}.pkl"))
+        for year in years])
