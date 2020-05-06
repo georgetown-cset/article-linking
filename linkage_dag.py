@@ -1,5 +1,3 @@
-import functools
-import json
 import os
 
 from airflow import DAG
@@ -12,7 +10,6 @@ from airflow.contrib.operators.gcs_delete_operator import GoogleCloudStorageDele
 from airflow.contrib.operators.gcs_to_bq import GoogleCloudStorageToBigQueryOperator
 from airflow.contrib.operators.bigquery_to_gcs import BigQueryToCloudStorageOperator
 from airflow.operators.bash_operator import BashOperator
-from airflow.operators.python_operator import PythonOperator
 from airflow.operators import DummyOperator
 from airflow.hooks.base_hook import BaseHook
 from airflow.contrib.operators.slack_webhook_operator import SlackWebhookOperator
@@ -31,7 +28,7 @@ default_args = {
     "email_on_retry": True,
     "retries": 1,
     "retry_delay": timedelta(minutes=5),
-    #"on_failure_callback": task_fail_slack_alert
+    "on_failure_callback": task_fail_slack_alert
 }
 
 with DAG("article_linkage_updater",
@@ -150,7 +147,9 @@ with DAG("article_linkage_updater",
             task_id=query_name,
             sql=f"{sql_dir}/{query_name}.sql",
             params={
-                "dataset": staging_dataset
+                "dataset": staging_dataset,
+                "staging_dataset": staging_dataset,
+                "production_dataset": production_dataset
             },
             destination_dataset_table=f"{staging_dataset}.{query_name}",
             allow_large_results=True,
@@ -197,26 +196,27 @@ with DAG("article_linkage_updater",
 
     vm_script_sequence = [
         "cd /mnt/disks/data",
-        "gsutil cp gs://{bucket}/{gcs_folder}/vm_scripts/create_merge_ids.py .",
-        "gsutil cp gs://{bucket}/{gcs_folder}/vm_scripts/run_simhash.py .",
+        "rm -rf run",
+        "cd run",
+        "gsutil cp gs://{bucket}/{gcs_folder}/vm_scripts/* .",
         "rm -rf input_data",
         "rm -rf current_ids",
         "mkdir input_data",
         "mkdir current_ids",
-        f"gsutil -m cp -r gs://{bucket}/{gcs_folder}/tmp/article_pairs .",
-        f"gsutil -m cp -r gs://{bucket}/{gcs_folder}/tmp/prev_id_mapping .",
-        f"gsutil -m cp -r gs://{bucket}/{gcs_folder}/tmp/simhash_input .",
+        f"gsutil -m cp -r gs://{bucket}/{tmp_dir}/article_pairs .",
+        f"gsutil -m cp -r gs://{bucket}/{tmp_dir}/simhash_input .",
         f"gsutil -m cp -r gs://{bucket}/{gcs_folder}/simhash_indexes .",
         f"gsutil -m cp -r gs://{bucket}/{gcs_folder}/simhash_results .",
+        f"gsutil -m cp -r gs://{bucket}/{tmp_dir}/prev_id_mapping .",
+        "mkdir new_simhash_indexes",
         "python3 run_simhash.py simhash_input simhash_results --simhash_indexes simhash_indexes --new_simhash_indexes new_simhash_indexes",
         "cp simhash_results/* article_pairs/",
         "python3 create_merge_ids.py --match_dir article_pairs --prev_id_mapping_dir prev_id_mapping --merge_file id_mapping.jsonl",
         f"gsutil -m cp id_mapping.jsonl gs://{bucket}/{gcs_folder}/tmp/",
-        f"gsutil rm gs://{bucket}/{gcs_folder}/simhash_results",
-        # need timestamp to prevent overwriting
-        f"gsutil -m cp -r gs://{bucket}/{gcs_folder}/simhash_results gs://{bucket}/{gcs_folder}/",
-        f"gsutil rm gs://{bucket}/{gcs_folder}/simhash_indexes",
-        f"gsutil -m cp -r gs://{bucket}/{gcs_folder}/new_simhash_indexes gs://{bucket}/{gcs_folder}/simhash_indexes"
+        f"gsutil rm -r gs://{bucket}/{gcs_folder}/simhash_results",
+        f"gsutil -m cp -r simhash_results gs://{bucket}/{gcs_folder}/",
+        f"gsutil rm -r gs://{bucket}/{gcs_folder}/simhash_indexes",
+        f"gsutil -m cp -r new_simhash_indexes gs://{bucket}/{gcs_folder}/simhash_indexes"
     ]
     vm_script = ";".join(vm_script_sequence)
 
@@ -224,6 +224,7 @@ with DAG("article_linkage_updater",
         task_id="create_cset_ids",
         bash_command=f"gcloud compute ssh {gce_resource_id} --zone {gce_zone} --command \"{vm_script}\""
     )
+
 
     lid_dataflow_options = {
         "project": project_id,
@@ -279,7 +280,7 @@ with DAG("article_linkage_updater",
     start_final_transform_queries = DummyOperator(task_id="start_final_transform")
     final_transform_queries = [t.strip() for t in open(f"{os.environ.get('DAGS_FOLDER')}/sequences/"
                                            f"{gcs_folder}/generate_merged_metadata.tsv")]
-    prev = start_final_transform_queries
+    last_transform_query = start_final_transform_queries
     for query_name in final_transform_queries:
         next = BigQueryOperator(
             task_id=query_name,
@@ -293,21 +294,60 @@ with DAG("article_linkage_updater",
             create_disposition="CREATE_IF_NEEDED",
             write_disposition="WRITE_TRUNCATE"
         )
-        prev >> next
-        prev = next
+        last_transform_query >> next
+        last_transform_query = next
 
+    check_queries = []
+    production_tables = ["all_metadata_with_cld2_lid", "article_links", "article_links_with_dataset", "article_merged_meta",
+                  "mapped_references"]
+    for table_name in production_tables:
+        check_queries.append(BigQueryCheckOperator(
+            task_id="check_monotonic_increase_"+table_name.lower(),
+            sql=(f"select (select count(0) from {staging_dataset}.{table_name}) >= "
+                 f"(select count(0) from {production_dataset}.{table_name})"),
+            use_legacy_sql=False
+        ))
+
+    # now, check that primary keys are actually unique
+    for table_name, pk in [("article_links", "orig_id"), ("article_links_with_dataset", "orig_id"),
+                           ("article_merged_meta", "merged_id")]:
+        check_queries.append(BigQueryCheckOperator(
+            task_id="check_pks_are_unique_"+table_name.lower(),
+            sql=f"select count({pk}) = count(distinct({pk})) from {staging_dataset}.{table_name}",
+            use_legacy_sql=False
+        ))
+
+    start_production_cp = DummyOperator(task_id="start_production_cp")
+
+    push_to_production = []
+    for table in production_tables:
+        push_to_production.append(BigQueryToBigQueryOperator(
+            task_id="copy_"+table.lower(),
+            source_project_dataset_tables=[f"{staging_dataset}.{table}"],
+            destination_project_dataset_table=f"{production_dataset}.{table}",
+            create_disposition="CREATE_IF_NEEDED",
+            write_disposition="WRITE_TRUNCATE"
+        ))
+
+    success_alert = SlackWebhookOperator(
+        task_id="post_success",
+        http_conn_id="slack",
+        webhook_token=slack_webhook_token,
+        message="Article linkage update succeeded!",
+        username="airflow"
+    )
 
     clear_tmp_dir >> metadata_sequences_start
-    metadata_sequences_end >> union_metadata >> export_metadata >> clean_corpus
-    last_query = import_clean_metadata
+    metadata_sequences_end >> union_metadata >> export_metadata >> clean_corpus >> import_clean_metadata
+    last_combination_query = import_clean_metadata
     for c in combine_commands:
-        last_query >> c
-        last_query = c
+        last_combination_query >> c
+        last_combination_query = c
 
-    (last_query >> heavy_compute_inputs >> gce_instance_start >> [create_cset_ids, run_lid] >>
+    (last_combination_query >> heavy_compute_inputs >> gce_instance_start >> [create_cset_ids, run_lid] >>
         gce_instance_stop >> [import_id_mapping, import_lid] >> start_final_transform_queries)
-    last_transform_query >> start_check_queries
-    last_check_query >> start_push_to_production
+
+    last_transform_query >> check_queries >> start_production_cp >> push_to_production >> success_alert
 
 
 

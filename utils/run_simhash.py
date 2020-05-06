@@ -5,6 +5,8 @@ import multiprocessing
 import os
 import pickle
 import re
+
+from datetime import datetime
 from simhash import Simhash, SimhashIndex
 
 
@@ -81,9 +83,10 @@ if __name__ == "__main__":
 
     years = get_year_partition(args.input_dir, args.tmp_dir)
     print("running simhash")
+    day = datetime.now().strftime("%Y-%m-%d")
     with multiprocessing.Pool() as p:
         p.starmap(write_sim_strings,
-            [(os.path.join(args.tmp_dir, year+".tsv"), os.path.join(args.output_dir, year+".jsonl"),
+            [(os.path.join(args.tmp_dir, year+".tsv"), os.path.join(args.output_dir, f"{year}_{day}.jsonl"),
               None if args.simhash_indexes is None else os.path.join(args.simhash_indexes, f"{year}.pkl"),
               None if args.new_simhash_indexes is None else os.path.join(args.new_simhash_indexes, f"{year}.pkl"))
         for year in years])
