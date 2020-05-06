@@ -197,32 +197,33 @@ with DAG("article_linkage_updater",
     vm_script_sequence = [
         "cd /mnt/disks/data",
         "rm -rf run",
+        "mkdir run",
         "cd run",
-        "gsutil cp gs://{bucket}/{gcs_folder}/vm_scripts/* .",
+        f"/snap/bin/gsutil cp gs://{bucket}/{gcs_folder}/vm_scripts/* .",
         "rm -rf input_data",
         "rm -rf current_ids",
         "mkdir input_data",
         "mkdir current_ids",
-        f"gsutil -m cp -r gs://{bucket}/{tmp_dir}/article_pairs .",
-        f"gsutil -m cp -r gs://{bucket}/{tmp_dir}/simhash_input .",
-        f"gsutil -m cp -r gs://{bucket}/{gcs_folder}/simhash_indexes .",
-        f"gsutil -m cp -r gs://{bucket}/{gcs_folder}/simhash_results .",
-        f"gsutil -m cp -r gs://{bucket}/{tmp_dir}/prev_id_mapping .",
+        f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/article_pairs .",
+        f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/simhash_input .",
+        f"/snap/bin/gsutil -m cp -r gs://{bucket}/{gcs_folder}/simhash_indexes .",
+        f"/snap/bin/gsutil -m cp -r gs://{bucket}/{gcs_folder}/simhash_results .",
+        f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/prev_id_mapping .",
         "mkdir new_simhash_indexes",
         "python3 run_simhash.py simhash_input simhash_results --simhash_indexes simhash_indexes --new_simhash_indexes new_simhash_indexes",
         "cp simhash_results/* article_pairs/",
         "python3 create_merge_ids.py --match_dir article_pairs --prev_id_mapping_dir prev_id_mapping --merge_file id_mapping.jsonl",
-        f"gsutil -m cp id_mapping.jsonl gs://{bucket}/{gcs_folder}/tmp/",
-        f"gsutil rm -r gs://{bucket}/{gcs_folder}/simhash_results",
-        f"gsutil -m cp -r simhash_results gs://{bucket}/{gcs_folder}/",
-        f"gsutil rm -r gs://{bucket}/{gcs_folder}/simhash_indexes",
-        f"gsutil -m cp -r new_simhash_indexes gs://{bucket}/{gcs_folder}/simhash_indexes"
+        f"/snap/bin/gsutil -m cp id_mapping.jsonl gs://{bucket}/{gcs_folder}/tmp/",
+        f"/snap/bin/gsutil rm -r gs://{bucket}/{gcs_folder}/simhash_results",
+        f"/snap/bin/gsutil -m cp -r simhash_results gs://{bucket}/{gcs_folder}/",
+        f"/snap/bin/gsutil rm -r gs://{bucket}/{gcs_folder}/simhash_indexes",
+        f"/snap/bin/gsutil -m cp -r new_simhash_indexes gs://{bucket}/{gcs_folder}/simhash_indexes"
     ]
     vm_script = ";".join(vm_script_sequence)
 
     create_cset_ids = BashOperator(
         task_id="create_cset_ids",
-        bash_command=f"gcloud compute ssh {gce_resource_id} --zone {gce_zone} --command \"{vm_script}\""
+        bash_command=f"gcloud compute ssh jm3312@{gce_resource_id} --zone {gce_zone} --command \"{vm_script}\""
     )
 
 

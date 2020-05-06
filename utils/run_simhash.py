@@ -1,5 +1,4 @@
 import argparse
-import itertools
 import json
 import multiprocessing
 import os
