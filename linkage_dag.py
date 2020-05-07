@@ -46,7 +46,7 @@ with DAG("article_linkage_updater",
     project_id = "gcp-cset-projects"
     gce_zone = "us-east1-c"
     gce_resource_id = "godzilla-of-article-linkage"
-    dags_dir = os.environ.get('DAGS_FOLDER')
+    dags_dir = os.environ.get("DAGS_FOLDER")
 
     # We keep several intermediate outputs, so clean it out at the start of each run. We clean at the start so if the
     # run fails we can examine the failed data
@@ -88,7 +88,7 @@ with DAG("article_linkage_updater",
 
     # check that the ids are unique across corpora
     union_ids = BigQueryOperator(
-                    task_id=query_name,
+                    task_id="union_ids",
                     sql=f"{sql_dir}/union_ids.sql",
                     params={
                         "dataset": staging_dataset
@@ -102,7 +102,7 @@ with DAG("article_linkage_updater",
 
     check_unique_input_ids = BigQueryCheckOperator(
             task_id="check_unique_input_ids",
-            sql=(f"select count(distinct(id)) = count(id) from {staging_dataset}.union_ids)"),
+            sql=(f"select count(distinct(id)) = count(id) from {staging_dataset}.union_ids"),
             use_legacy_sql=False
         )
 
@@ -187,7 +187,7 @@ with DAG("article_linkage_updater",
 
     merge_combine_commands = []
     merge_combine_query_list = [t.strip() for t in open(f"{dags_dir}/sequences/"
-                  f"{gcs_folder}/merge_combine_metadata.tsv")]
+                  f"{gcs_folder}/merge_combined_metadata.tsv")]
     last_combination_query = wait_for_combine
     for query_name in merge_combine_query_list:
         next = BigQueryOperator(

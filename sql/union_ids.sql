@@ -1,9 +1,9 @@
-select id from  from {{params.dataset}}.arxiv_ids
+select id from {{params.dataset}}.arxiv_ids
 UNION ALL
-select id from  from {{params.dataset}}.mag_ids
+select cast(id as string) from {{params.dataset}}.mag_ids
 UNION ALL
-select id from  from {{params.dataset}}.wos_ids
+select id from {{params.dataset}}.wos_ids
 UNION ALL
-select id from  from {{params.dataset}}.ds_ids
+select id from {{params.dataset}}.ds_ids
 UNION ALL
-select id from  from {{params.dataset}}.cnki_ids
+select id from {{params.dataset}}.cnki_ids

@@ -2,42 +2,40 @@
 ![Python application](https://github.com/georgetown-cset/article-linking/workflows/Python%20application/badge.svg)
 
 This repository contains a description and supporting code for CSET's current method of 
-cross-dataset article linking. The short version is that  we normalized titles, abstracts, and author last names,
-and then considered each group of articles within or across datasets that shared at least three of the following 
+cross-dataset article linking. Note that we use "article" very loosely, although in a way that to our knowledge 
+is fairly consistent across corpora. Books, for example, are included. For full details, see the queries in 
+section 1. The short version is that we normalized titles, abstracts, and author last names, and then considered 
+each group of articles within or across datasets that shared at least three of the following 
 (non-null) metadata fields:
  
 *  Normalized title
 *  Normalized abstract
 *  Publication year
-*   Normalized author last names
+*  Normalized author last names
 *  Citations (for within dataset matches)
 *  DOI
  
-to correspond to one article in the merged dataset. We also allow matches returned by simhash for year + a
-concatenation of the normalized title and abstract.
+to correspond to one article in the merged dataset. Within each year's data, we also allow matches returned by 
+simhash for the concatenation of the normalized title and abstract.
 
 To do this, we run the `linkage_dag.py` on airflow, and keep it along with its supporting files up to date
 using `./push_to_airflow_bucket.sh`. Don't run that script unless you have pulled and know what you're doing.
 
--
+For an English description of what the dag does, see [the documentation](methods_documentation/overview.md).
 
-The documentation comes in five parts: 
+### How to use the linkage tables
 
-1.) [Metadata generation](methods_documentation/0_metadata_table_generation.md). This section describes
-how we put a subset of metadata across arXiv, Web of Science, Dimensions, CNKI, and Microsoft Academic
-Graph into a common format, and then normalized that data.
+We have three tables that are most likely to help you use article linkage.
 
-2.) [Matching table generation](methods_documentation/1_matching_table_generation.md). In this section,
-we describe how we matched articles across corpora using the metadata in (1).
+- `gcp_cset_links_v2.article_links` - For each original ID (e.g., from WoS), gives the corresponding CSET ID. 
+This is a many-to-one mapping. Please update your scripts to use `gcp_cset_links_v2.article_links_with_dataset`,
+which has an additional column that contains the dataset of the `orig_id`.
 
-3.) [Merged table generation](methods_documentation/2_merged_table_generation.md). Here, we describe how
-we took sets of matched articles and combined their metadata.
+- `gcp_cset_links_v2.all_metadata_with_cld2_lid` - provides CLD2 LID for the titles and abstracts of each
+current version of each article's metadata. You can also use this table to get the metadata used in the 
+match for each version of the raw articles. Note that the `id` column is _not_ unique as some corpora like WOS
+have multiple versions of the metadata for different languages.
 
-4.) [Reporting](methods_documentation/3_reporting.md). Finally, we show final counts and overlap
-percentages across datasets.
-
-5.) [How To Use](methods_documentation/4_how_to_use_the_match_tables.md). This is a summary of how to
-use the linkage tables.
-
-Note that throughout, we use "article" very loosely, although in a way that to our knowledge is fairly
-consistent across corpora. Books, for example, are included. For full details, see the queries in section 1.
+- `gcp_cset_links_v2.article_merged_metadata` - This maps the CSET `merged_id` to a set of merged metadata.
+The merging method takes the maximum value of each metadata field across each matched article, which may not 
+be suitable for your purposes.
