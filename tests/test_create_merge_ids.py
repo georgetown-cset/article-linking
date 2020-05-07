@@ -2,7 +2,7 @@ import json
 import shutil
 import unittest
 import os
-from create_merge_ids import create_match_sets, create_match_keys
+from utils.create_merge_ids import create_match_sets, create_match_keys
 
 static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 

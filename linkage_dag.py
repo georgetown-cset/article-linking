@@ -15,7 +15,6 @@ from airflow.hooks.base_hook import BaseHook
 from airflow.contrib.operators.slack_webhook_operator import SlackWebhookOperator
 from datetime import timedelta, datetime
 
-
 from dataloader.airflow_utils.slack import task_fail_slack_alert
 
 
@@ -38,7 +37,6 @@ with DAG("article_linkage_updater",
     slack_webhook_token = BaseHook.get_connection("slack").password
     bucket = "airflow-data-exchange"
     gcs_folder = "article_linkage"
-    import_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     tmp_dir = f"{gcs_folder}/tmp"
     raw_data_dir = f"{gcs_folder}/data"
     schema_dir = f"{gcs_folder}/schemas"
@@ -48,18 +46,23 @@ with DAG("article_linkage_updater",
     project_id = "gcp-cset-projects"
     gce_zone = "us-east1-c"
     gce_resource_id = "godzilla-of-article-linkage"
+    dags_dir = os.environ.get('DAGS_FOLDER')
 
+    # We keep several intermediate outputs, so clean it out at the start of each run. We clean at the start so if the
+    # run fails we can examine the failed data
     clear_tmp_dir = GoogleCloudStorageDeleteOperator(
         task_id="clear_tmp_gcs_dir",
         bucket_name=bucket,
         prefix=tmp_dir + "/"
     )
 
+    # Next, we'll run a different set of queries for each dataset to convert the metadata we use in the match to a
+    # standard format
     metadata_sequences_start = []
     metadata_sequences_end = []
     for dataset in ["arxiv", "cnki", "ds", "mag", "wos"]:
         ds_commands = []
-        query_list = [t.strip() for t in open(f"{os.environ.get('DAGS_FOLDER')}/sequences/"
+        query_list = [t.strip() for t in open(f"{dags_dir}/sequences/"
                                                            f"{gcs_folder}/generate_{dataset}_metadata.tsv")]
         # run the queries needed to generate the metadata tables
         for query_name in query_list:
@@ -75,8 +78,6 @@ with DAG("article_linkage_updater",
                 create_disposition="CREATE_IF_NEEDED",
                 write_disposition="WRITE_TRUNCATE"
             ))
-        # this doesn't work... figure out why later
-        # metadata_sequences.append(functools.reduce(BigQueryOperator.set_downstream, ds_commands))
         start = ds_commands[0]
         curr = ds_commands[0]
         for c in ds_commands[1:]:
@@ -85,6 +86,8 @@ with DAG("article_linkage_updater",
         metadata_sequences_end.append(curr)
         metadata_sequences_start.append(start)
 
+    # We now take the union of all the metadata and export it to GCS for normalization via Dataflow. We then run
+    # the Dataflow job, and import the outputs back into BQ
     union_metadata = BigQueryOperator(
         task_id="union_metadata",
         sql=f"{sql_dir}/union_metadata.sql",
@@ -111,12 +114,12 @@ with DAG("article_linkage_updater",
         "disk_size_gb": "30",
         "max_num_workers": "100",
         "region": "us-east1",
-        "temp_location": "gs://cset-dataflow-test/example-tmps/",
+        "temp_location": "gs://{bucket}/{tmp_dir}/clean_dataflow",
         "save_main_session": "",
-        "requirements_file": f"{os.environ.get('DAGS_FOLDER')}/requirements/article_linkage_text_clean_requirements.txt"
+        "requirements_file": f"{dags_dir}/requirements/article_linkage_text_clean_requirements.txt"
     }
     clean_corpus = DataFlowPythonOperator(
-        py_file=f"{os.environ.get('DAGS_FOLDER')}/linkage_scripts/clean_corpus.py",
+        py_file=f"{dags_dir}/linkage_scripts/clean_corpus.py",
         job_name="article_linkage_clean_corpus",
         task_id="clean_corpus",
         dataflow_default_options=dataflow_options,
@@ -138,8 +141,9 @@ with DAG("article_linkage_updater",
         write_disposition="WRITE_TRUNCATE"
     )
 
+    # It's now time to combine the
     combine_commands = []
-    query_list = [t.strip() for t in open(f"{os.environ.get('DAGS_FOLDER')}/sequences/"
+    query_list = [t.strip() for t in open(f"{dags_dir}/sequences/"
                                                            f"{gcs_folder}/combine_metadata.tsv")]
     # todo: parallelize, these don't all need to run in series
     for query_name in query_list:
@@ -235,10 +239,10 @@ with DAG("article_linkage_updater",
         "region": "us-east1",
         "temp_location": "gs://cset-dataflow-test/example-tmps/",
         "save_main_session": "",
-        "requirements_file": f"{os.environ.get('DAGS_FOLDER')}/requirements/article_linkage_lid_dataflow_requirements.txt"
+        "requirements_file": f"{dags_dir}/requirements/article_linkage_lid_dataflow_requirements.txt"
     }
     run_lid = DataFlowPythonOperator(
-        py_file=f"{os.environ.get('DAGS_FOLDER')}/linkage_scripts/run_lid.py",
+        py_file=f"{dags_dir}/linkage_scripts/run_lid.py",
         job_name="article_linkage_lid",
         task_id="run_lid",
         dataflow_default_options=lid_dataflow_options,
@@ -279,7 +283,7 @@ with DAG("article_linkage_updater",
     )
 
     start_final_transform_queries = DummyOperator(task_id="start_final_transform")
-    final_transform_queries = [t.strip() for t in open(f"{os.environ.get('DAGS_FOLDER')}/sequences/"
+    final_transform_queries = [t.strip() for t in open(f"{dags_dir}/sequences/"
                                            f"{gcs_folder}/generate_merged_metadata.tsv")]
     last_transform_query = start_final_transform_queries
     for query_name in final_transform_queries:
