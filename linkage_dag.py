@@ -114,7 +114,7 @@ with DAG("article_linkage_updater",
         "disk_size_gb": "30",
         "max_num_workers": "100",
         "region": "us-east1",
-        "temp_location": "gs://{bucket}/{tmp_dir}/clean_dataflow",
+        "temp_location": f"gs://{bucket}/{tmp_dir}/clean_dataflow",
         "save_main_session": "",
         "requirements_file": f"{dags_dir}/requirements/article_linkage_text_clean_requirements.txt"
     }
@@ -141,12 +141,13 @@ with DAG("article_linkage_updater",
         write_disposition="WRITE_TRUNCATE"
     )
 
-    # It's now time to combine the
+    # It's now time to create the match pairs that can be found using combinations of three exact (modulo normalization)
+    # metadata matches. We can do the individual combinations of triples of matches in parallel, but then need to
+    # aggregate in series
     combine_commands = []
-    query_list = [t.strip() for t in open(f"{dags_dir}/sequences/"
-                                                           f"{gcs_folder}/combine_metadata.tsv")]
-    # todo: parallelize, these don't all need to run in series
-    for query_name in query_list:
+    combine_query_list = [t.strip() for t in open(f"{dags_dir}/sequences/"
+                  f"{gcs_folder}/combine_metadata.tsv")]
+    for query_name in combine_query_list:
         combine_commands.append(BigQueryOperator(
             task_id=query_name,
             sql=f"{sql_dir}/{query_name}.sql",
@@ -162,6 +163,31 @@ with DAG("article_linkage_updater",
             write_disposition="WRITE_TRUNCATE"
         ))
 
+    wait_for_combine = DummyOperator(task_id="wait_for_combine")
+
+    merge_combine_commands = []
+    merge_combine_query_list = [t.strip() for t in open(f"{dags_dir}/sequences/"
+                  f"{gcs_folder}/merge_combine_metadata.tsv")]
+    last_combination_query = wait_for_combine
+    for query_name in merge_combine_query_list:
+        next = BigQueryOperator(
+            task_id=query_name,
+            sql=f"{sql_dir}/{query_name}.sql",
+            params={
+                "dataset": staging_dataset,
+                "staging_dataset": staging_dataset,
+                "production_dataset": production_dataset
+            },
+            destination_dataset_table=f"{staging_dataset}.{query_name}",
+            allow_large_results=True,
+            use_legacy_sql=False,
+            create_disposition="CREATE_IF_NEEDED",
+            write_disposition="WRITE_TRUNCATE"
+        )
+        last_combination_query >> next
+        last_combination_query = next
+
+    # Now, we need to prep some inputs for RAM and CPU-intensive code that will run on "godzilla of article linkage".
     heavy_compute_inputs = [
         BigQueryToCloudStorageOperator(
             task_id="export_old_cset_ids",
@@ -189,8 +215,8 @@ with DAG("article_linkage_updater",
         )
     ]
 
-    #### run time and ram-intensive scripts on a powerful VM. Meanwhile, run a dataflow job to do LID on the article
-    #### titles and abstracts
+    # Start up godzilla of article linkage, update simhash indexes of title+abstract, run simhash, then create the
+    # merge ids
     gce_instance_start = GceInstanceStartOperator(
         project_id=project_id,
         zone=gce_zone,
@@ -214,9 +240,11 @@ with DAG("article_linkage_updater",
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{gcs_folder}/simhash_results .",
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/prev_id_mapping .",
         "mkdir new_simhash_indexes",
-        "python3 run_simhash.py simhash_input simhash_results --simhash_indexes simhash_indexes --new_simhash_indexes new_simhash_indexes",
+        ("python3 run_simhash.py simhash_input simhash_results --simhash_indexes simhash_indexes "
+            "--new_simhash_indexes new_simhash_indexes"),
         "cp simhash_results/* article_pairs/",
-        "python3 create_merge_ids.py --match_dir article_pairs --prev_id_mapping_dir prev_id_mapping --merge_file id_mapping.jsonl",
+        ("python3 create_merge_ids.py --match_dir article_pairs --prev_id_mapping_dir prev_id_mapping "
+            "--merge_file id_mapping.jsonl"),
         f"/snap/bin/gsutil -m cp id_mapping.jsonl gs://{bucket}/{gcs_folder}/tmp/",
         f"/snap/bin/gsutil rm -r gs://{bucket}/{gcs_folder}/simhash_results",
         f"/snap/bin/gsutil -m cp -r simhash_results gs://{bucket}/{gcs_folder}/",
@@ -230,14 +258,14 @@ with DAG("article_linkage_updater",
         bash_command=f"gcloud compute ssh jm3312@{gce_resource_id} --zone {gce_zone} --command \"{vm_script}\""
     )
 
-
+    # while the carticle ids are updating, run lid on the titles and abstracts
     lid_dataflow_options = {
         "project": project_id,
         "runner": "DataflowRunner",
         "disk_size_gb": "30",
         "max_num_workers": "100",
         "region": "us-east1",
-        "temp_location": "gs://cset-dataflow-test/example-tmps/",
+        "temp_location": f"gs://{bucket}/{tmp_dir}/run_lid",
         "save_main_session": "",
         "requirements_file": f"{dags_dir}/requirements/article_linkage_lid_dataflow_requirements.txt"
     }
@@ -253,6 +281,8 @@ with DAG("article_linkage_updater",
         },
     )
 
+    # turn off the expensive godzilla of article linkage when we're done with it, then import the id mappings and
+    # lid back into BQ
     gce_instance_stop = GceInstanceStopOperator(
         project_id=project_id,
         zone=gce_zone,
@@ -282,7 +312,9 @@ with DAG("article_linkage_updater",
         write_disposition="WRITE_TRUNCATE"
     )
 
+    # generate the rest of the tables that will be copied to the production dataset
     start_final_transform_queries = DummyOperator(task_id="start_final_transform")
+
     final_transform_queries = [t.strip() for t in open(f"{dags_dir}/sequences/"
                                            f"{gcs_folder}/generate_merged_metadata.tsv")]
     last_transform_query = start_final_transform_queries
@@ -302,9 +334,12 @@ with DAG("article_linkage_updater",
         last_transform_query >> next
         last_transform_query = next
 
+    # we're about to copy tables from staging to production, so do checks to make sure we haven't broken anything
+    # along the way
     check_queries = []
-    production_tables = ["all_metadata_with_cld2_lid", "article_links", "article_links_with_dataset", "article_merged_meta",
-                  "mapped_references"]
+    # TODO: trigger COP inputs in a separate DAG
+    production_tables = ["all_metadata_with_cld2_lid", "article_links", "article_links_with_dataset",
+                         "article_merged_meta", "mapped_references"]
     for table_name in production_tables:
         check_queries.append(BigQueryCheckOperator(
             task_id="check_monotonic_increase_"+table_name.lower(),
@@ -313,7 +348,6 @@ with DAG("article_linkage_updater",
             use_legacy_sql=False
         ))
 
-    # now, check that primary keys are actually unique
     for table_name, pk in [("article_links", "orig_id"), ("article_links_with_dataset", "orig_id"),
                            ("article_merged_meta", "merged_id")]:
         check_queries.append(BigQueryCheckOperator(
@@ -322,6 +356,10 @@ with DAG("article_linkage_updater",
             use_legacy_sql=False
         ))
 
+    # TODO: add check that all ids in all input tables made it through to the article_links table and that the
+    #   article_links table contains no extra ids
+
+    # We're done! Checks passed, so copy to production and post success to slack
     start_production_cp = DummyOperator(task_id="start_production_cp")
 
     push_to_production = []
@@ -342,18 +380,12 @@ with DAG("article_linkage_updater",
         username="airflow"
     )
 
+    # task structure
     clear_tmp_dir >> metadata_sequences_start
-    metadata_sequences_end >> union_metadata >> export_metadata >> clean_corpus >> import_clean_metadata
-    last_combination_query = import_clean_metadata
-    for c in combine_commands:
-        last_combination_query >> c
-        last_combination_query = c
+    (metadata_sequences_end >> union_metadata >> export_metadata >> clean_corpus >> import_clean_metadata >>
+        combine_commands >> wait_for_combine)
 
     (last_combination_query >> heavy_compute_inputs >> gce_instance_start >> [create_cset_ids, run_lid] >>
         gce_instance_stop >> [import_id_mapping, import_lid] >> start_final_transform_queries)
 
     last_transform_query >> check_queries >> start_production_cp >> push_to_production >> success_alert
-
-
-
-
