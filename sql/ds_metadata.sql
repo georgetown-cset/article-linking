@@ -1,3 +1,4 @@
+-- get digital science combined metadata used in matching
 SELECT
   d.id,
   d.title,

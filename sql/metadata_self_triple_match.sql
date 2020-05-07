@@ -1,3 +1,4 @@
+-- get combined set of metadata matches
 select distinct * from (
 select * from {{params.dataset}}.year_title_abstract
 union all

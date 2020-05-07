@@ -1,3 +1,4 @@
+-- get input for simhash, which is articles with not null titles and abstracts that have not already been matched
 select
   id,
   year,

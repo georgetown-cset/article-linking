@@ -1,3 +1,4 @@
+-- create "merged metadata" by simply taking the max value of our metadata columns of interest
 select
   merged_id,
   max(title) as title,

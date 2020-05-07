@@ -1,3 +1,4 @@
+-- get cnki years, titles, and authors
 select
   a.cnki_id as id,
   b.year,

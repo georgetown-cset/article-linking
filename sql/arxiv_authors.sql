@@ -1,3 +1,4 @@
+-- get arxiv author last names
 select
   id,
   ARRAY(select keyname from UNNEST(authors.author)) as last_names

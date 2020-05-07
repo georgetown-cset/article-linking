@@ -1,3 +1,4 @@
+-- glue all the metadata together into one table
 select cast(id as string) as id, title, abstract, clean_doi, year, last_names, null as references,
   "arxiv" as dataset
   from {{params.dataset}}.arxiv_metadata

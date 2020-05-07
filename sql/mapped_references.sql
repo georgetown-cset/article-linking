@@ -1,3 +1,4 @@
+-- map references to their carticle ids
 select distinct b.merged_id as id, c.merged_id as ref_id from
 (select id, reference from (
   select id, reference, dataset from {{params.dataset}}.all_metadata_with_cld2_lid cross join unnest(split(references, ",")) as reference

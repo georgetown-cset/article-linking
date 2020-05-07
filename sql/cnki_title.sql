@@ -1,3 +1,4 @@
+-- get both the chinese and english versions of article titles
 (select
   a.cnki_id as id,
   b.publication_title as title

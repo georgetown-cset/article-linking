@@ -1,3 +1,4 @@
+-- get arxiv metadata used for matching
 select
   p.id,
   p.title,

@@ -1,3 +1,4 @@
+-- prepare wos metadata for standard form used in match
 SELECT
   ids.id,
   b.title,

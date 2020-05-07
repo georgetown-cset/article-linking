@@ -1,3 +1,4 @@
+-- find articles that match on year, normalized abstract, and doi
 select a.id as all1_id, m.id as all2_id
 from {{params.dataset}}.all_metadata_norm a
 inner join

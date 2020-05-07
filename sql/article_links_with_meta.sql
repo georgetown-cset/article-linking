@@ -1,3 +1,4 @@
+-- add all versions of match set metadata to the merged ids
 select
   a.merged_id,
   b.title,

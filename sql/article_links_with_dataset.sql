@@ -1,3 +1,4 @@
+-- add orig_id dataset to the article_links table
 select distinct
   a.merged_id,
   a.orig_id,

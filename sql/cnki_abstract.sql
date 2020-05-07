@@ -1,3 +1,4 @@
+-- get both the english and chinese versions of cnki abstracts
 (select
   a.cnki_id as id,
   b.abstract

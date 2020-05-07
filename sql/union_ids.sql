@@ -1,3 +1,4 @@
+-- glue all the ids together (used in validation)
 select id from {{params.dataset}}.arxiv_ids
 UNION ALL
 select cast(id as string) from {{params.dataset}}.mag_ids

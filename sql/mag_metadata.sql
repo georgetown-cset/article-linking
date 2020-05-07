@@ -1,3 +1,4 @@
+-- get combined set of mag metadata in standard form used for match
 select
   p.PaperId as id,
   p.OriginalTitle as title,

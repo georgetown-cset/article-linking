@@ -1,3 +1,4 @@
+-- find articles that match on normalized title, doi, and references
 select a.id as all1_id, m.id as all2_id
 from {{params.dataset}}.all_metadata_norm a
 inner join

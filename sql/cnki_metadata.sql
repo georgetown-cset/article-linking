@@ -1,3 +1,4 @@
+-- get cnki metadata used for matching
 select
   a.id,
   b.title,
