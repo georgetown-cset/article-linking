@@ -1,0 +1,1 @@
+select distinct(PaperId) as id from gcp_cset_mag.PapersWithAbstracts

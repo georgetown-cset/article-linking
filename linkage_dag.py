@@ -86,6 +86,26 @@ with DAG("article_linkage_updater",
         metadata_sequences_end.append(curr)
         metadata_sequences_start.append(start)
 
+    # check that the ids are unique across corpora
+    union_ids = BigQueryOperator(
+                    task_id=query_name,
+                    sql=f"{sql_dir}/union_ids.sql",
+                    params={
+                        "dataset": staging_dataset
+                    },
+                    destination_dataset_table=f"{staging_dataset}.union_ids",
+                    allow_large_results=True,
+                    use_legacy_sql=False,
+                    create_disposition="CREATE_IF_NEEDED",
+                    write_disposition="WRITE_TRUNCATE"
+                )
+
+    check_unique_input_ids = BigQueryCheckOperator(
+            task_id="check_unique_input_ids",
+            sql=(f"select count(distinct(id)) = count(id) from {staging_dataset}.union_ids)"),
+            use_legacy_sql=False
+        )
+
     # We now take the union of all the metadata and export it to GCS for normalization via Dataflow. We then run
     # the Dataflow job, and import the outputs back into BQ
     union_metadata = BigQueryOperator(
@@ -356,8 +376,12 @@ with DAG("article_linkage_updater",
             use_legacy_sql=False
         ))
 
-    # TODO: add check that all ids in all input tables made it through to the article_links table and that the
-    #   article_links table contains no extra ids
+    check_queries.append(BigQueryCheckOperator(
+            task_id="all_ids_survived",
+            sql=(f"select count(0) = 0 from (select id from {staging_dataset}.union_ids where id in "
+                 f"(select orig_id from {staging_dataset}.article_links))"),
+            use_legacy_sql=False
+    ))
 
     # We're done! Checks passed, so copy to production and post success to slack
     start_production_cp = DummyOperator(task_id="start_production_cp")
@@ -382,8 +406,8 @@ with DAG("article_linkage_updater",
 
     # task structure
     clear_tmp_dir >> metadata_sequences_start
-    (metadata_sequences_end >> union_metadata >> export_metadata >> clean_corpus >> import_clean_metadata >>
-        combine_commands >> wait_for_combine)
+    (metadata_sequences_end >> union_ids >> check_unique_input_ids >> union_metadata >> export_metadata >>
+        clean_corpus >> import_clean_metadata >> combine_commands >> wait_for_combine)
 
     (last_combination_query >> heavy_compute_inputs >> gce_instance_start >> [create_cset_ids, run_lid] >>
         gce_instance_stop >> [import_id_mapping, import_lid] >> start_final_transform_queries)
