@@ -1,6 +1,6 @@
 ## Normalizing Article Metadata 
 
-We are merging four datasets, all of which are structured differently in our internal database. To
+We are merging five datasets, all of which are structured differently in our internal database. To
 match article metadata, we first need to extract the columns from this data that we want to use
 in matching into a consistent set of tables with the following columns:
 
