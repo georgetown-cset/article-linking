@@ -259,12 +259,12 @@ with DAG("article_linkage_updater",
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{gcs_folder}/simhash_indexes .",
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{gcs_folder}/simhash_results .",
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/prev_id_mapping .",
-        "mkdir new_simhash_indexes",
+        "cp -r simhash_indexes new_simhash_indexes", # do this to make sure we still have indexes for years with no input
         ("python3 run_simhash.py simhash_input simhash_results --simhash_indexes simhash_indexes "
             "--new_simhash_indexes new_simhash_indexes"),
         "cp simhash_results/* article_pairs/",
         ("python3 create_merge_ids.py --match_dir article_pairs --prev_id_mapping_dir prev_id_mapping "
-            "--merge_file id_mapping.jsonl"),
+            "--merge_file id_mapping.jsonl --current_ids_dir article_pairs"),
         f"/snap/bin/gsutil -m cp id_mapping.jsonl gs://{bucket}/{gcs_folder}/tmp/",
         f"/snap/bin/gsutil rm -r gs://{bucket}/{gcs_folder}/simhash_results",
         f"/snap/bin/gsutil -m cp -r simhash_results gs://{bucket}/{gcs_folder}/",
@@ -378,8 +378,8 @@ with DAG("article_linkage_updater",
 
     check_queries.append(BigQueryCheckOperator(
             task_id="all_ids_survived",
-            sql=(f"select count(0) = 0 from (select id from {staging_dataset}.union_ids where id in "
-                 f"(select orig_id from {staging_dataset}.article_links))"),
+            sql=(f"select count(0) = 0 from (select id from staging_gcp_cset_links.union_ids "
+                 f"where id not in (select orig_id from staging_gcp_cset_links.article_links))"),
             use_legacy_sql=False
     ))
 
