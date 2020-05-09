@@ -32,7 +32,8 @@ def write_sim_strings(data_fi: str, output_fi: str, input_index: str = None, out
         index = pickle.load(open(input_index, mode="rb"))
         for obj_id, obj in objs:
             index.add(obj_id, obj)
-        open(output_index, mode="wb").write(pickle.dumps(index))
+        print("writing updated index to "+output_index)
+        pickle.dump(index, open(output_index, mode="wb"))
 
     out = open(output_fi, mode="w")
     for article_id, article_text in data_ids_and_values:

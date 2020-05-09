@@ -48,8 +48,8 @@ with DAG("article_linkage_updater",
     gce_resource_id = "godzilla-of-article-linkage"
     dags_dir = os.environ.get("DAGS_FOLDER")
 
-    # We keep several intermediate outputs, so clean it out at the start of each run. We clean at the start so if the
-    # run fails we can examine the failed data
+    # We keep several intermediate outputs in a tmp dir on gcs, so clean it out at the start of each run. We clean at
+    # the start of the run so if the run fails we can examine the failed data
     clear_tmp_dir = GoogleCloudStorageDeleteOperator(
         task_id="clear_tmp_gcs_dir",
         bucket_name=bucket,
@@ -259,17 +259,15 @@ with DAG("article_linkage_updater",
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{gcs_folder}/simhash_indexes .",
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{gcs_folder}/simhash_results .",
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/prev_id_mapping .",
-        "cp -r simhash_indexes new_simhash_indexes", # do this to make sure we still have indexes for years with no input
+        "mkdir new_simhash_indexes",
         ("python3 run_simhash.py simhash_input simhash_results --simhash_indexes simhash_indexes "
             "--new_simhash_indexes new_simhash_indexes"),
         "cp simhash_results/* article_pairs/",
         ("python3 create_merge_ids.py --match_dir article_pairs --prev_id_mapping_dir prev_id_mapping "
             "--merge_file id_mapping.jsonl --current_ids_dir article_pairs"),
         f"/snap/bin/gsutil -m cp id_mapping.jsonl gs://{bucket}/{gcs_folder}/tmp/",
-        f"/snap/bin/gsutil rm -r gs://{bucket}/{gcs_folder}/simhash_results",
-        f"/snap/bin/gsutil -m cp -r simhash_results gs://{bucket}/{gcs_folder}/",
-        f"/snap/bin/gsutil rm -r gs://{bucket}/{gcs_folder}/simhash_indexes",
-        f"/snap/bin/gsutil -m cp -r new_simhash_indexes gs://{bucket}/{gcs_folder}/simhash_indexes"
+        f"/snap/bin/gsutil -m cp simhash_results/* gs://{bucket}/{gcs_folder}/simhash_results/",
+        f"/snap/bin/gsutil -m cp new_simhash_indexes/* gs://{bucket}/{gcs_folder}/simhash_indexes/"
     ]
     vm_script = ";".join(vm_script_sequence)
 

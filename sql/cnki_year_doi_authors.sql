@@ -1,6 +1,6 @@
 -- get cnki years, titles, and authors
 select
-  a.cnki_id as id,
+  a.cnki_document_id as id,
   b.year,
   lower(b.cnki_doi) as clean_doi,
   split(b.author, ";") as last_names
