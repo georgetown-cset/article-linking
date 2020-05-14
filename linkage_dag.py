@@ -30,7 +30,7 @@ default_args = {
     "on_failure_callback": task_fail_slack_alert
 }
 
-with DAG("article_linkage_updater",
+with DAG("article_linkage_updater1",
             default_args=default_args,
             description="Links articles across our scholarly lit holdings.",
             schedule_interval=None) as dag:
@@ -262,8 +262,9 @@ with DAG("article_linkage_updater",
         "mkdir new_simhash_indexes",
         ("python3 run_simhash.py simhash_input simhash_results --simhash_indexes simhash_indexes "
             "--new_simhash_indexes new_simhash_indexes"),
+        "cp -r article_pairs usable_ids",
         "cp simhash_results/* article_pairs/",
-        ("python3 create_merge_ids.py --match_dir article_pairs --prev_id_mapping_dir prev_id_mapping "
+        ("python3 create_merge_ids.py --match_dir usable_ids --prev_id_mapping_dir prev_id_mapping "
             "--merge_file id_mapping.jsonl --current_ids_dir article_pairs"),
         f"/snap/bin/gsutil -m cp id_mapping.jsonl gs://{bucket}/{gcs_folder}/tmp/",
         f"/snap/bin/gsutil -m cp simhash_results/* gs://{bucket}/{gcs_folder}/simhash_results/",

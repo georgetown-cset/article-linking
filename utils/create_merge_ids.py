@@ -2,8 +2,6 @@ import argparse
 import json
 import os
 
-from tqdm import tqdm
-
 '''
 Creates match sets from pairs of linked articles, assigns each match set an id, and writes out a mapping from
 each id to each article in its match set.
@@ -47,9 +45,10 @@ def get_usable_ids(ids_dir: str) -> set:
         return None
     usable_ids = set()
     for fi in os.listdir(ids_dir):
+        print("reading "+fi)
         for line in open(os.path.join(ids_dir, fi)):
             js = json.loads(line)
-            usable_ids.add(js["id"])
+            usable_ids.add(js["id1"])
     return usable_ids
 
 
@@ -64,7 +63,7 @@ def create_match_sets(match_dir: str, current_ids_dir: str = None) -> list:
     print("getting adjacency lists")
     adj_list = {}
     usable_ids = get_usable_ids(current_ids_dir)
-    for fi in tqdm(os.listdir(match_dir)):
+    for fi in os.listdir(match_dir):
         for line in open(os.path.join(match_dir, fi)):
             js = json.loads(line)
             key1 = js["id1"]
@@ -81,7 +80,7 @@ def create_match_sets(match_dir: str, current_ids_dir: str = None) -> list:
             adj_list[key2].add(key1)
     seen_ids = set()
     match_sets = []
-    for k in tqdm(adj_list.keys()):
+    for k in adj_list.keys():
         if k in seen_ids:
             continue
         # grab every connected article
@@ -116,7 +115,7 @@ def create_match_keys(match_sets: list, match_file: str, prev_id_mapping_dir: st
                     max_merg = merg_id
     match_id = int(max_merg.split("carticle_")[1])+1
     num_new, num_old = 0, 0
-    for ms in tqdm(match_sets):
+    for ms in match_sets:
         cset_article_id = None
         # if we have exactly one existing id, reuse it, even if new articles are matched to it.
         # if two articles that previously had different carticle ids are now in the same match set, 

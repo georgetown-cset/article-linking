@@ -6,7 +6,7 @@ import pickle
 import re
 
 from datetime import datetime
-from simhash import Simhash, SimhashIndex
+from my_simhash import Simhash, SimhashIndex
 
 
 def get_features(s: str) -> list:
