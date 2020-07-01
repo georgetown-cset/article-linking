@@ -9,6 +9,7 @@ from airflow.contrib.operators.gcp_compute_operator import GceInstanceStartOpera
 from airflow.contrib.operators.gcs_delete_operator import GoogleCloudStorageDeleteOperator
 from airflow.contrib.operators.gcs_to_bq import GoogleCloudStorageToBigQueryOperator
 from airflow.contrib.operators.bigquery_to_gcs import BigQueryToCloudStorageOperator
+from airflow.operators.dagrun_operator import TriggerDagRunOperator
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators import DummyOperator
 from airflow.hooks.base_hook import BaseHook
@@ -363,7 +364,7 @@ with DAG("article_linkage_updater1",
         check_queries.append(BigQueryCheckOperator(
             task_id="check_monotonic_increase_"+table_name.lower(),
             sql=(f"select (select count(0) from {staging_dataset}.{table_name}) >= "
-                 f"(select count(0) from {production_dataset}.{table_name})"),
+                 f"(select 0.8*count(0) from {production_dataset}.{table_name})"),
             use_legacy_sql=False
         ))
 
@@ -403,6 +404,9 @@ with DAG("article_linkage_updater1",
         username="airflow"
     )
 
+    trigger_merge_meta = TriggerDagRunOperator(task_id="trigger_merge_meta",
+                                               trigger_dag_id="merged_article_metadata_updater")
+
     # task structure
     clear_tmp_dir >> metadata_sequences_start
     (metadata_sequences_end >> union_ids >> check_unique_input_ids >> union_metadata >> export_metadata >>
@@ -411,4 +415,4 @@ with DAG("article_linkage_updater1",
     (last_combination_query >> heavy_compute_inputs >> gce_instance_start >> [create_cset_ids, run_lid] >>
         gce_instance_stop >> [import_id_mapping, import_lid] >> start_final_transform_queries)
 
-    last_transform_query >> check_queries >> start_production_cp >> push_to_production >> success_alert
+    last_transform_query >> check_queries >> start_production_cp >> push_to_production >> success_alert >> trigger_merge_meta
