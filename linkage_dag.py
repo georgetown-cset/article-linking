@@ -404,8 +404,11 @@ with DAG("article_linkage_updater1",
         username="airflow"
     )
 
-    trigger_merge_meta = TriggerDagRunOperator(task_id="trigger_merge_meta",
-                                               trigger_dag_id="merged_article_metadata_updater")
+    downstream_tasks = [
+        TriggerDagRunOperator(task_id="trigger_merge_meta",
+                                               trigger_dag_id="merged_article_metadata_updater"),
+        TriggerDagRunOperator(task_id="trigger_article_classification", trigger_dag_id="article_classification")
+    ]
 
     # task structure
     clear_tmp_dir >> metadata_sequences_start
@@ -415,4 +418,4 @@ with DAG("article_linkage_updater1",
     (last_combination_query >> heavy_compute_inputs >> gce_instance_start >> [create_cset_ids, run_lid] >>
         gce_instance_stop >> [import_id_mapping, import_lid] >> start_final_transform_queries)
 
-    last_transform_query >> check_queries >> start_production_cp >> push_to_production >> success_alert >> trigger_merge_meta
+    last_transform_query >> check_queries >> start_production_cp >> push_to_production >> success_alert >> downstream_tasks
