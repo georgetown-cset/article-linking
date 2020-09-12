@@ -396,6 +396,16 @@ with DAG("article_linkage_updater1",
             write_disposition="WRITE_TRUNCATE"
         ))
 
+    snapshot_table = f"{production_dataset}.article_links_"+datetime.now().strftime("%Y_%m_%d")
+    # mk the snapshot predictions table
+    snapshot = BigQueryToBigQueryOperator(
+        task_id="mk_snapshot",
+        source_project_dataset_tables=[f"{staging_dataset}.article_links"],
+        destination_project_dataset_table=snapshot_table,
+        create_disposition="CREATE_IF_NEEDED",
+        write_disposition="WRITE_TRUNCATE"
+    )
+
     success_alert = SlackWebhookOperator(
         task_id="post_success",
         http_conn_id="slack",
@@ -418,4 +428,5 @@ with DAG("article_linkage_updater1",
     (last_combination_query >> heavy_compute_inputs >> gce_instance_start >> [create_cset_ids, run_lid] >>
         gce_instance_stop >> [import_id_mapping, import_lid] >> start_final_transform_queries)
 
-    last_transform_query >> check_queries >> start_production_cp >> push_to_production >> success_alert >> downstream_tasks
+    (last_transform_query >> check_queries >> start_production_cp >> push_to_production >> snapshot >>
+        success_alert >> downstream_tasks)
