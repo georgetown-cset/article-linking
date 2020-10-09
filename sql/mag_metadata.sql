@@ -13,7 +13,7 @@ left join
 {{params.dataset}}.mag_authors a
 on p.PaperId = a.PaperId
 left join
-  (select PaperId, string_agg(cast(PaperReferenceId as STRING) order by PaperReferenceId) as references
+  (select PaperId, string_agg(PaperReferenceId order by PaperReferenceId) as references
   from gcp_cset_mag.PaperReferences group by PaperId) r
 on r.PaperId = p.PaperId
-where (p.DocType != "Dataset") and (p.DocType != "Patent")
+where ((p.DocType != "Dataset") and (p.DocType != "Patent")) or (p.DocType is null)
