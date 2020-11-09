@@ -8,11 +8,14 @@ class TestCleanCorpus(unittest.TestCase):
     maxDiff = None
 
     def test_strip_copyright_yes(self):
-        self.assertEqual("test", self.scrubber.strip_copyright("test copyright (C) 2014 test1"))
+        self.assertEqual("test", self.scrubber.strip_copyright("test (C) 2014 test1"))
         self.assertEqual("test", self.scrubber.strip_copyright("test (c) 2014 test1"))
+        self.assertEqual("test", self.scrubber.strip_copyright("test copyright 2014 test1"))
 
     def test_strip_copyright_no(self):
         self.assertEqual("test copyright test1", self.scrubber.strip_copyright("test copyright test1"))
+        self.assertEqual("(a) the first item (b) the second item (c) the third item",
+                         self.scrubber.strip_copyright("(a) the first item (b) the second item (c) the third item"))
 
     def test_clean_text_data(self):
         input_record = {

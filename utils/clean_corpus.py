@@ -32,10 +32,10 @@ class Scrub(beam.DoFn):
         :param text: a string that may contain copyright information
         :return: the same string stripped of copyright information
         '''
-        patterns = [r'(copyright)?\s+\(c\).*', r'\s+(c)\s+\d\d\d\d.*']
+        patterns = [r"copyright\s+\d\d\d\d.*", r"(copyright)?\s+\(c\)\s+\d\d\d\d.*"]
         clean_text = text.lower()
         for p in patterns:
-            clean_text = re.sub(p, '', clean_text)
+            clean_text = re.sub(p, "", clean_text)
         return clean_text.strip()
 
     def clean_text_data(self, value_to_clean: object, field: str) -> list:
