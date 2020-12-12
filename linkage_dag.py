@@ -22,7 +22,7 @@ from dataloader.airflow_utils.slack import task_fail_slack_alert
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
-    "start_date": datetime(2020, 3, 15),
+    "start_date": datetime(2020, 12, 12),
     "email": ["jennifer.melot@georgetown.edu"],
     "email_on_failure": True,
     "email_on_retry": True,
