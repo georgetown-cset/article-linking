@@ -8,7 +8,10 @@ import json
 import logging
 import pycld2 as cld2
 import apache_beam as beam
+
 from apache_beam.options.pipeline_options import PipelineOptions
+from typing import Iterable
+
 
 class LangId(beam.DoFn):
     '''
@@ -50,7 +53,7 @@ class LangId(beam.DoFn):
             except UnicodeDecodeError as e:
                 logging.warning(e)
 
-    def process(self, record_str: str) -> iter:
+    def process(self, record_str: str) -> Iterable:
         record = ast.literal_eval(record_str)
         self.add_cld2_outputs(record)
         yield json.dumps(record)

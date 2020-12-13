@@ -4,9 +4,11 @@ import json
 import re
 import unicodedata
 import apache_beam as beam
+
 from apache_beam.options.pipeline_options import PipelineOptions
 from gensim.parsing.preprocessing import *
 from gensim.utils import deaccent
+from typing import Iterable
 
 '''
 This script normalizes string fields as needed for matching. The resulting normalized data should only be used for
@@ -67,7 +69,7 @@ class Scrub(beam.DoFn):
         '''
         return doi.lower()
 
-    def process(self, record_str) -> iter:
+    def process(self, record_str) -> Iterable:
         '''
         Load a jsonl-formatted line as json, then clean its fields
         :param record_str: jsonl-formatted string
