@@ -415,8 +415,6 @@ with DAG("article_linkage_updater1",
     )
 
     downstream_tasks = [
-        TriggerDagRunOperator(task_id="trigger_merge_meta",
-                                               trigger_dag_id="merged_article_metadata_updater"),
         TriggerDagRunOperator(task_id="trigger_article_classification", trigger_dag_id="article_classification")
     ]
 
