@@ -39,4 +39,6 @@ union all
 select * from {{params.dataset}}.abstract_references_doi
 union all
 select * from {{params.dataset}}.author_references_doi
+union all
+select * from {{params.dataset}}.arxiv_id_match
 )

@@ -22,7 +22,7 @@ select distinct b.merged_id as id, c.merged_id as ref_id from
     on a23.document_name = a21.out_citation_document_name
   )
 ) where reference in (
-  select orig_id from staging_gcp_cset_links.article_links_with_dataset where dataset=dataset
+  select orig_id from staging_gcp_cset_links.article_links_with_dataset
 )) a
 left join staging_gcp_cset_links.article_links b
 on a.id = b.orig_id

@@ -5,9 +5,9 @@ This repository contains a description and supporting code for CSET's current me
 cross-dataset article linking. Note that we use "article" very loosely, although in a way that to our knowledge 
 is fairly consistent across corpora. Books, for example, are included.
 
-For each article in arXiv, WOS, CNKI, Dimensions, and Microsoft Academic Graph, we normalized titles, abstracts, 
-and author last names, and then considered each group of articles within or across datasets that shared at least 
-three of the following (non-null) metadata fields:
+For each article in arXiv, WOS, CNKI, Dimensions, Papers With Code, and Microsoft Academic Graph, 
+we normalized titles, abstracts, and author last names, and then considered each group of articles 
+within or across datasets that shared at least three of the following (non-null) metadata fields:
  
 *  Normalized title
 *  Normalized abstract

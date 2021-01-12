@@ -61,7 +61,7 @@ with DAG("article_linkage_updater1",
     # standard format
     metadata_sequences_start = []
     metadata_sequences_end = []
-    for dataset in ["arxiv", "cnki", "ds", "mag", "wos"]:
+    for dataset in ["arxiv", "cnki", "ds", "mag", "wos", "papers_with_code"]:
         ds_commands = []
         query_list = [t.strip() for t in open(f"{dags_dir}/sequences/"
                                                            f"{gcs_folder}/generate_{dataset}_metadata.tsv")]
@@ -271,7 +271,7 @@ with DAG("article_linkage_updater1",
         f"/snap/bin/gsutil -m cp simhash_results/* gs://{bucket}/{gcs_folder}/simhash_results/",
         f"/snap/bin/gsutil -m cp new_simhash_indexes/* gs://{bucket}/{gcs_folder}/simhash_indexes/"
     ]
-    vm_script = ";".join(vm_script_sequence)
+    vm_script = " && ".join(vm_script_sequence)
 
     create_cset_ids = BashOperator(
         task_id="create_cset_ids",

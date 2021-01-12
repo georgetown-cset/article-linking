@@ -8,3 +8,5 @@ UNION ALL
 select id from {{params.dataset}}.ds_ids
 UNION ALL
 select id from {{params.dataset}}.cnki_ids
+UNION ALL
+select id from {{params.dataset}}.papers_with_code_ids
