@@ -10,9 +10,9 @@ from my_simhash import Simhash, SimhashIndex
 
 
 def get_features(s: str) -> list:
-    '''
+    """
     The default feature extraction method, from https://github.com/leonsim/simhash
-    '''
+    """
     width = 3
     s = s.lower()
     s = re.sub(r"[^\w]+", "", s)
@@ -20,9 +20,9 @@ def get_features(s: str) -> list:
 
 
 def write_sim_strings(data_fi: str, output_fi: str, input_index: str = None, output_index: str = None) -> None:
-    '''
+    """
     Does the similarity matching and writes out the outputs. Basic method from from https://github.com/leonsim/simhash
-    '''
+    """
     data_ids_and_values = [line.strip().split("\t") for line in open(data_fi).readlines()]
     objs = [(article_id, Simhash(get_features(article_text))) for article_id, article_text in data_ids_and_values]
     index = None
@@ -45,7 +45,7 @@ def write_sim_strings(data_fi: str, output_fi: str, input_index: str = None, out
 
 
 def get_year_partition(input_dir: str, output_dir: str) -> list:
-    '''
+    """
     Takes an input directory of jsonl containing three fields: id, year, and normalized_text. Constructs a map
     mapping year to tuples of id, normalized_text, and writes each year's data as a tsv
 
@@ -56,7 +56,7 @@ def get_year_partition(input_dir: str, output_dir: str) -> list:
     :param input_dir: directory of jsonl
     :param output_dir: dir where each year's worth of pairs should be written as pkl
     :return: list of years
-    '''
+    """
     print("getting year partition")
     year_to_outfi = {}
     if not os.path.exists(output_dir):

@@ -376,12 +376,33 @@ with DAG("article_linkage_updater1",
             use_legacy_sql=False
         ))
 
-    check_queries.append(BigQueryCheckOperator(
+    check_queries.extend([
+        BigQueryCheckOperator(
             task_id="all_ids_survived",
             sql=(f"select count(0) = 0 from (select id from staging_gcp_cset_links.union_ids "
                  f"where id not in (select orig_id from staging_gcp_cset_links.article_links))"),
             use_legacy_sql=False
-    ))
+        ),
+        BigQueryCheckOperator(
+            task_id="all_trivial_matches_survived",
+            sql="""
+            select
+              count(concat(all1_id, " ", all2_id)) = 0
+            from
+              staging_gcp_cset_links.metadata_self_triple_match
+            where concat(all1_id, " ", all2_id) not in (
+              select
+                concat(links1.orig_id, " ", links2.orig_id)
+              from 
+                staging_gcp_cset_links.article_links links1
+              left join
+                staging_gcp_cset_links.article_links links2
+              on links1.merged_id = links2.merged_id
+            )
+            """,
+            use_legacy_sql=False
+        )
+    ])
 
     # We're done! Checks passed, so copy to production and post success to slack
     start_production_cp = DummyOperator(task_id="start_production_cp")

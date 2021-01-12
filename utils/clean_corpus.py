@@ -86,6 +86,8 @@ class Scrub(beam.DoFn):
                 cleaned = self.clean_text_data(js[field], field)
                 delimiter = "" if field in ["title", "abstract"] else " "
                 clean_record[field+"_norm"] = delimiter.join(cleaned)
+            else:
+                raise ValueError(field+" is not supported by clean_corpus")
         yield clean_record
 
 
