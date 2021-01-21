@@ -26,14 +26,14 @@ def write_sim_strings(data_fi: str, output_fi: str, input_index: str = None, out
     data_ids_and_values = [line.strip().split("\t") for line in open(data_fi).readlines()]
     objs = [(article_id, Simhash(get_features(article_text))) for article_id, article_text in data_ids_and_values]
     index = None
-    if input_index is None:
+    if (input_index is None) or not os.path.exists(input_index):
         index = SimhashIndex(objs, k=3)
     else:
         index = pickle.load(open(input_index, mode="rb"))
         for obj_id, obj in objs:
             index.add(obj_id, obj)
-        print("writing updated index to "+output_index)
-        pickle.dump(index, open(output_index, mode="wb"))
+    print("writing updated index to "+output_index)
+    pickle.dump(index, open(output_index, mode="wb"))
 
     out = open(output_fi, mode="w")
     for article_id, article_text in data_ids_and_values:
