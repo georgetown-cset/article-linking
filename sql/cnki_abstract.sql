@@ -9,7 +9,7 @@ inner join
 gcp_cset_cnki.cset_cnki_journals_id_mappings a
 -- For uniqueness, match on both document_name and cnki_doi. Unlike cnki_doi, document_name is never null. 
 -- Fall back to matching document name alone if cnki_doi is null
-on (a.document_name = b.document_name) and ((a.cnki_doi = b.cnki_doi) or (a.cnki_doi is null)))
+on (a.document_name = b.document_name) and ((a.cnki_doi = b.cnki_doi) or (a.cnki_doi is null) or (trim(a.cnki_doi) = "")))
 union all
 (select
   a.cnki_document_id as id,
@@ -17,7 +17,7 @@ union all
 from gcp_cset_cnki.cset_cnki_journals_corpus b
 inner join
 gcp_cset_cnki.cset_cnki_journals_id_mappings a
-on (a.document_name = b.document_name) and ((a.cnki_doi = b.cnki_doi) or (a.cnki_doi is null)))
+on (a.document_name = b.document_name) and ((a.cnki_doi = b.cnki_doi) or (a.cnki_doi is null) or (trim(a.cnki_doi) = "")))
 union all
 (select
   a.cnki_document_id as id,
@@ -27,7 +27,7 @@ inner join
 gcp_cset_cnki.cset_cnki_dissertations_id_mappings a
 -- For uniqueness, match on both document_name and cnki_doi. Unlike cnki_doi, document_name is never null.
 -- Fall back to matching document name alone if cnki_doi is null
-on (a.document_name = b.document_name) and ((a.cnki_doi = b.cnki_doi) or (a.cnki_doi is null)))
+on (a.document_name = b.document_name) and ((a.cnki_doi = b.cnki_doi) or (a.cnki_doi is null) or (trim(a.cnki_doi) = "")))
 union all
 (select
   a.cnki_document_id as id,
@@ -35,7 +35,7 @@ union all
 from gcp_cset_cnki.cset_cnki_dissertations_corpus b
 inner join
 gcp_cset_cnki.cset_cnki_dissertations_id_mappings a
-on (a.document_name = b.document_name) and ((a.cnki_doi = b.cnki_doi) or (a.cnki_doi is null)))
+on (a.document_name = b.document_name) and ((a.cnki_doi = b.cnki_doi) or (a.cnki_doi is null) or (trim(a.cnki_doi) = "")))
 union all
 (select
   a.cnki_document_id as id,
@@ -45,7 +45,7 @@ inner join
 gcp_cset_cnki.cset_cnki_conferences_id_mappings a
 -- For uniqueness, match on both document_name and doi. Unlike doi, document_name is never null.
 -- Fall back to matching document name alone if doi is null
-on (a.document_name = b.document_name) and ((a.cnki_doi = b.doi) or (a.cnki_doi is null)))
+on (a.document_name = b.document_name) and ((a.cnki_doi = b.doi) or (a.cnki_doi is null) or (trim(a.cnki_doi) = "")))
 union all
 (select
   a.cnki_document_id as id,
@@ -53,4 +53,4 @@ union all
 from gcp_cset_cnki.cnki_conferences b
 inner join
 gcp_cset_cnki.cset_cnki_conferences_id_mappings a
-on (a.document_name = b.document_name) and ((a.cnki_doi = b.doi) or (a.cnki_doi is null)))
+on (a.document_name = b.document_name) and ((a.cnki_doi = b.doi) or (a.cnki_doi is null) or (trim(a.cnki_doi) = "")))
