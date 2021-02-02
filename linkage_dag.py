@@ -401,7 +401,12 @@ with DAG("article_linkage_updater1",
             )
             """,
             use_legacy_sql=False
-        )
+        ),
+        BigQueryCheckOperator(
+            task_id="no_null_references",
+            sql="select count(0) = 0 from gcp_cset_links_v2.mapped_references where id is null or ref_id is null",
+            use_legacy_sql = False
+        ),
     ])
 
     # We're done! Checks passed, so copy to production and post success to slack

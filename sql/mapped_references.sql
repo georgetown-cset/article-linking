@@ -30,4 +30,3 @@ left join staging_gcp_cset_links.article_links b
 on a.id = b.orig_id
 left join staging_gcp_cset_links.article_links c
 on a.reference = c.orig_id
-where (id is not null) and (ref_id is not null)
