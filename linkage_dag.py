@@ -379,24 +379,24 @@ with DAG("article_linkage_updater1",
     check_queries.extend([
         BigQueryCheckOperator(
             task_id="all_ids_survived",
-            sql=(f"select count(0) = 0 from (select id from staging_gcp_cset_links.union_ids "
-                 f"where id not in (select orig_id from staging_gcp_cset_links.article_links))"),
+            sql=(f"select count(0) = 0 from (select id from {staging_dataset}.union_ids "
+                 f"where id not in (select orig_id from {staging_dataset}.article_links))"),
             use_legacy_sql=False
         ),
         BigQueryCheckOperator(
             task_id="all_trivial_matches_survived",
-            sql="""
+            sql=f"""
             select
               count(concat(all1_id, " ", all2_id)) = 0
             from
-              staging_gcp_cset_links.metadata_self_triple_match
+              {staging_dataset}.metadata_self_triple_match
             where concat(all1_id, " ", all2_id) not in (
               select
                 concat(links1.orig_id, " ", links2.orig_id)
               from 
-                staging_gcp_cset_links.article_links links1
+                {staging_dataset}.article_links links1
               left join
-                staging_gcp_cset_links.article_links links2
+                {staging_dataset}.article_links links2
               on links1.merged_id = links2.merged_id
             )
             """,
@@ -404,7 +404,7 @@ with DAG("article_linkage_updater1",
         ),
         BigQueryCheckOperator(
             task_id="no_null_references",
-            sql="select count(0) = 0 from gcp_cset_links_v2.mapped_references where id is null or ref_id is null",
+            sql=f"select count(0) = 0 from {staging_dataset}.mapped_references where id is null or ref_id is null",
             use_legacy_sql = False
         ),
     ])
