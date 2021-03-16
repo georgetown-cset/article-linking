@@ -44,6 +44,7 @@ with DAG("article_linkage_updater1",
     sql_dir = f"sql/{gcs_folder}"
     staging_dataset = "staging_gcp_cset_links"
     production_dataset = "gcp_cset_links_v2"
+    backup_dataset = production_dataset+"_backups"
     project_id = "gcp-cset-projects"
     gce_zone = "us-east1-c"
     gce_resource_id = "godzilla-of-article-linkage"
@@ -422,7 +423,7 @@ with DAG("article_linkage_updater1",
             write_disposition="WRITE_TRUNCATE"
         ))
 
-    snapshot_table = f"{production_dataset}.article_links_"+datetime.now().strftime("%Y_%m_%d")
+    snapshot_table = f"{backup_dataset}.article_links_"+datetime.now().strftime("%Y%m%d")
     # mk the snapshot predictions table
     snapshot = BigQueryToBigQueryOperator(
         task_id="mk_snapshot",
