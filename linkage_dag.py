@@ -360,7 +360,7 @@ with DAG("article_linkage_updater1",
     check_queries = []
     # TODO: trigger COP inputs in a separate DAG
     production_tables = ["all_metadata_with_cld2_lid", "article_links", "article_links_with_dataset",
-                         "article_merged_meta", "mapped_references"]
+                         "article_merged_meta", "mapped_references", "article_links_nested"]
     for table_name in production_tables:
         check_queries.append(BigQueryCheckOperator(
             task_id="check_monotonic_increase_"+table_name.lower(),
