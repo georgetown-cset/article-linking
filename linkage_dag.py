@@ -437,15 +437,19 @@ with DAG("article_linkage_updater1",
         )
     )
 
-    snapshot_table = f"{backup_dataset}.article_links_"+datetime.now().strftime("%Y%m%d")
-    # mk the snapshot predictions table
-    snapshot = BigQueryToBigQueryOperator(
-        task_id="mk_snapshot",
-        source_project_dataset_tables=[f"{staging_dataset}.article_links"],
-        destination_project_dataset_table=snapshot_table,
-        create_disposition="CREATE_IF_NEEDED",
-        write_disposition="WRITE_TRUNCATE"
-    )
+    wait_for_production_copy = DummyOperator(task_id="wait_for_production_copy")
+
+    snapshots = []
+    curr_date = datetime.now().strftime("%Y%m%d")
+    for table in ["article_links", "article_links_nested", "paper_references_merged"]:
+        # mk the snapshot predictions table
+        snapshots.append(BigQueryToBigQueryOperator(
+            task_id=f"snapshot_{table}",
+            source_project_dataset_tables=[f"{production_dataset}.{table}"],
+            destination_project_dataset_table=f"{backup_dataset}.{table}_{curr_date}",
+            create_disposition="CREATE_IF_NEEDED",
+            write_disposition="WRITE_TRUNCATE"
+        ))
 
     success_alert = SlackWebhookOperator(
         task_id="post_success",
@@ -468,5 +472,5 @@ with DAG("article_linkage_updater1",
     (last_combination_query >> heavy_compute_inputs >> gce_instance_start >> [create_cset_ids, run_lid] >>
         gce_instance_stop >> [import_id_mapping, import_lid] >> start_final_transform_queries)
 
-    (last_transform_query >> check_queries >> start_production_cp >> push_to_production >> snapshot >>
-        success_alert >> downstream_tasks)
+    (last_transform_query >> check_queries >> start_production_cp >> push_to_production >> wait_for_production_copy >>
+        snapshots >> success_alert >> downstream_tasks)
