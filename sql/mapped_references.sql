@@ -3,7 +3,7 @@ select distinct b.merged_id as id, c.merged_id as ref_id from
 (select id, reference from (
   select id, reference, dataset from staging_gcp_cset_links.all_metadata_with_cld2_lid cross join unnest(split(references, ",")) as reference
   union all
-  select id, ref_id as reference, "cnki" as dataset from staging_cnki_downstream_updates.exact_normalized_title_matches
+  select id, ref_id as reference, "cnki" as dataset from cnki_citation_linkage.exact_normalized_title_matches
   union all
   (
     select a12.cnki_document_id as id, a11.target_id as reference, "cnki" as dataset from
