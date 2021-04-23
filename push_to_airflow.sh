@@ -10,4 +10,3 @@ gsutil cp utils/article_linkage_lid_dataflow_requirements.txt gs://us-east1-etl-
 gsutil cp utils/article_linkage_text_clean_requirements.txt gs://us-east1-etl-05d83c6e-bucket/dags/requirements/
 gsutil cp utils/clean_corpus.py gs://us-east1-etl-05d83c6e-bucket/dags/linkage_scripts/
 gsutil cp utils/run_lid.py gs://us-east1-etl-05d83c6e-bucket/dags/linkage_scripts/
-

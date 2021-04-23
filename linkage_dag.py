@@ -423,6 +423,20 @@ with DAG("article_linkage_updater1",
             write_disposition="WRITE_TRUNCATE"
         ))
 
+    # this query is essentially just copying mapped_references to paper_references_merged, so
+    # putting this in the push_to_production array is not risky
+    push_to_production.append(
+        BigQueryOperator(
+            task_id="copy_mapped_references_to_paper_references_merged",
+            sql=f"select id as merged_id, ref_id from {staging_dataset}.mapped_references",
+            destination_dataset_table=f"{production_dataset}.paper_references_merged",
+            allow_large_results=True,
+            use_legacy_sql=False,
+            create_disposition="CREATE_IF_NEEDED",
+            write_disposition="WRITE_TRUNCATE"
+        )
+    )
+
     snapshot_table = f"{backup_dataset}.article_links_"+datetime.now().strftime("%Y%m%d")
     # mk the snapshot predictions table
     snapshot = BigQueryToBigQueryOperator(
@@ -443,7 +457,7 @@ with DAG("article_linkage_updater1",
 
     downstream_tasks = [
         TriggerDagRunOperator(task_id="trigger_article_classification", trigger_dag_id="article_classification"),
-        TriggerDagRunOperator(task_id="trigger_citation_percentiles", trigger_dag_id="citation_percentiles"),
+        TriggerDagRunOperator(task_id="trigger_fields_of_study", trigger_dag_id="fields_of_study"),
     ]
 
     # task structure
