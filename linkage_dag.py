@@ -1,3 +1,4 @@
+import json
 import os
 
 from airflow import DAG
@@ -12,11 +13,13 @@ from airflow.contrib.operators.bigquery_to_gcs import BigQueryToCloudStorageOper
 from airflow.operators.dagrun_operator import TriggerDagRunOperator
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators import DummyOperator
+from airflow.operators.python_operator import PythonOperator
 from airflow.hooks.base_hook import BaseHook
 from airflow.contrib.operators.slack_webhook_operator import SlackWebhookOperator
 from datetime import timedelta, datetime
 
 from dataloader.airflow_utils.slack import task_fail_slack_alert
+from dataloader.scripts.populate_documentation import update_table_descriptions
 
 
 default_args = {
@@ -358,7 +361,6 @@ with DAG("article_linkage_updater1",
     # we're about to copy tables from staging to production, so do checks to make sure we haven't broken anything
     # along the way
     check_queries = []
-    # TODO: trigger COP inputs in a separate DAG
     production_tables = ["all_metadata_with_cld2_lid", "article_links", "article_links_with_dataset",
                          "article_merged_meta", "mapped_references", "article_links_nested"]
     for table_name in production_tables:
@@ -451,6 +453,8 @@ with DAG("article_linkage_updater1",
             write_disposition="WRITE_TRUNCATE"
         ))
 
+    wait_for_snapshots = DummyOperator(task_id="wait_for_snapshots")
+
     success_alert = SlackWebhookOperator(
         task_id="post_success",
         http_conn_id="slack",
@@ -458,6 +462,20 @@ with DAG("article_linkage_updater1",
         message="Article linkage update succeeded!",
         username="airflow"
     )
+
+    with open(f"{os.environ.get('DAGS_FOLDER')}/schemas/{gcs_folder}/table_descriptions.json") as f:
+        table_desc = json.loads(f.read())
+    for table in production_tables + ["mapped_references"]:
+        pop_descriptions = PythonOperator(
+            task_id="populate_column_documentation_for_" + table,
+            op_kwargs={
+                "input_schema": f"{os.environ.get('DAGS_FOLDER')}/schemas/{gcs_folder}/{table}.json",
+                "table_name": f"{production_dataset}.{table}",
+                "table_description": table_desc[table]
+            },
+            python_callable=update_table_descriptions
+        )
+        wait_for_snapshots >> pop_descriptions >> success_alert
 
     downstream_tasks = [
         TriggerDagRunOperator(task_id="trigger_article_classification", trigger_dag_id="article_classification"),
@@ -473,4 +491,6 @@ with DAG("article_linkage_updater1",
         gce_instance_stop >> [import_id_mapping, import_lid] >> start_final_transform_queries)
 
     (last_transform_query >> check_queries >> start_production_cp >> push_to_production >> wait_for_production_copy >>
-        snapshots >> success_alert >> downstream_tasks)
+        snapshots >> wait_for_snapshots)
+
+    success_alert >> downstream_tasks
