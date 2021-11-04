@@ -1,0 +1,38 @@
+[
+  {
+    "mode": "REQUIRED",
+    "name": "merged_id",
+    "type": "STRING",
+    "description": "*deprecated, use gcp_cset_links_v2.corpus_merged* - CSET merged id of a set of articles judged to be the same"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "title",
+    "type": "STRING",
+    "description": "*deprecated, use gcp_cset_links_v2.corpus_merged* - Article title"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "abstract",
+    "type": "STRING",
+    "description": "*deprecated, use gcp_cset_links_v2.corpus_merged* - Article abstrac"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "doi",
+    "type": "STRING",
+    "description": "*deprecated, use gcp_cset_links_v2.corpus_merged* - Article doi"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "year",
+    "type": "INTEGER",
+    "description": "*deprecated, use gcp_cset_links_v2.corpus_merged* - Article publication year"
+  },
+  {
+    "mode": "REPEATED",
+    "name": "normalized_last_names",
+    "type": "STRING",
+    "description": "*deprecated, use gcp_cset_links_v2.corpus_merged* - Normalized author last names"
+  }
+]

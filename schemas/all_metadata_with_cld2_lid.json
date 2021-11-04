@@ -2,81 +2,97 @@
   {
     "mode": "NULLABLE", 
     "name": "id", 
-    "type": "STRING"
+    "type": "STRING",
+    "description": "id of the article from its originating dataset"
   }, 
   {
     "mode": "NULLABLE", 
     "name": "title", 
-    "type": "STRING"
+    "type": "STRING",
+    "description": "Title of the article"
   }, 
   {
     "mode": "NULLABLE", 
     "name": "title_cld2_lid_success", 
-    "type": "BOOLEAN"
+    "type": "BOOLEAN",
+    "description": "Whether pycld2 LID ran successfully for the title field"
   },
   {
     "mode": "NULLABLE", 
     "name": "title_cld2_lid_is_reliable", 
-    "type": "BOOLEAN"
+    "type": "BOOLEAN",
+    "description": "pycld2's assessment of whether its LID output was reliable for the title field"
   },
   {
     "mode": "NULLABLE", 
     "name": "title_cld2_lid_first_result", 
-    "type": "STRING"
+    "type": "STRING",
+    "description": "The language of the title field's first pycld2 LID result"
   },
   {
     "mode": "NULLABLE", 
     "name": "title_cld2_lid_first_result_short_code", 
-    "type": "STRING"
+    "type": "STRING",
+    "description": "The short code of the title field's first pycld2 LID result"
   },
   {
     "mode": "NULLABLE", 
     "name": "abstract", 
-    "type": "STRING"
+    "type": "STRING",
+    "description": "Abstract of the paper"
   }, 
   {
     "mode": "NULLABLE", 
     "name": "abstract_cld2_lid_success", 
-    "type": "BOOLEAN"
+    "type": "BOOLEAN",
+    "description": "Whether pycld2 LID ran successfully for the abstract field"
   },
   {
     "mode": "NULLABLE", 
     "name": "abstract_cld2_lid_is_reliable", 
-    "type": "BOOLEAN"
+    "type": "BOOLEAN",
+    "description": "pycld2's assessment of whether its LID output was reliable for the abstract field"
   },
   {
     "mode": "NULLABLE", 
     "name": "abstract_cld2_lid_first_result", 
-    "type": "STRING"
+    "type": "STRING",
+    "description": "The language of the abstract field's first pycld2 LID result"
   },
   {
     "mode": "NULLABLE", 
     "name": "abstract_cld2_lid_first_result_short_code", 
-    "type": "STRING"
+    "type": "STRING",
+    "description": "The short code of the abstract field's first pycld2 LID result"
   },
   {
     "mode": "NULLABLE", 
     "name": "clean_doi", 
-    "type": "STRING"
+    "type": "STRING",
+    "description": "Normalized DOI"
   }, 
   {
     "mode": "NULLABLE", 
     "name": "year", 
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "description": "Publication year"
   }, 
   {
     "mode": "REPEATED", 
     "name": "last_names", 
-    "type": "STRING"
+    "type": "STRING",
+    "description": "Author last names"
   }, 
   {
     "mode": "NULLABLE", 
     "name": "references", 
-    "type": "STRING"
+    "type": "STRING",
+    "description": "Ids of papers referenced by this paper"
   }, 
   {
     "mode": "NULLABLE", 
     "name": "dataset", 
-    "type": "STRING"
+    "type": "STRING",
+    "description": "Dataset this paper comes from"
   }
 ]
