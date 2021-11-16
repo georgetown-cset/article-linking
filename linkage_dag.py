@@ -456,7 +456,7 @@ with DAG("article_linkage_updater",
     # this query is essentially just copying mapped_references to paper_references_merged, so
     # putting this in the push_to_production array is not risky
     push_to_production.append(
-        BigQueryOperator(
+        BigQueryInsertJobOperator(
             task_id="copy_mapped_references_to_paper_references_merged",
             configuration={
                 "query": {
@@ -501,7 +501,7 @@ with DAG("article_linkage_updater",
 
     with open(f"{os.environ.get('DAGS_FOLDER')}/schemas/{gcs_folder}/table_descriptions.json") as f:
         table_desc = json.loads(f.read())
-    for table in production_tables + ["mapped_references"]:
+    for table in production_tables + ["paper_references_merged"]:
         pop_descriptions = PythonOperator(
             task_id="populate_column_documentation_for_" + table,
             op_kwargs={
