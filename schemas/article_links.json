@@ -7,7 +7,7 @@
   },
   {
     "mode": "REQUIRED",
-    "name": "orig_ids",
+    "name": "orig_id",
     "type": "STRING",
     "description": "Originating dataset's id for an article"
   }
