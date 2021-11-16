@@ -99,7 +99,7 @@ with DAG("article_linkage_updater",
         metadata_sequences_start.append(start)
 
     # check that the ids are unique across corpora
-    union_ids = BigQueryOperator(
+    union_ids = BigQueryInsertJobOperator(
         task_id="union_ids",
         configuration={
             "query": {
