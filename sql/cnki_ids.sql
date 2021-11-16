@@ -2,9 +2,9 @@
 -- but per conversation with Daniel, not all these ids will appear in any of the three metadata tables (below)
 -- we use to construct CNKI articles. So instead, we'll union the ids that appear in the metadata tables we use.
 select distinct(id) from (
-  select id from {{params.dataset}}.cnki_year_doi_authors
+  select id from {{staging_dataset}}.cnki_year_doi_authors
   union all
-  select id from {{params.dataset}}.cnki_title
+  select id from {{staging_dataset}}.cnki_title
   union all
-  select id from {{params.dataset}}.cnki_abstract
+  select id from {{staging_dataset}}.cnki_abstract
 )

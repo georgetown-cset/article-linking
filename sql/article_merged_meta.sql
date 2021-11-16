@@ -6,4 +6,4 @@ select
   min(clean_doi) as doi,
   max(year) as year,
   split(max(last_names_norm), " ") as normalized_last_names
-from {{params.dataset}}.article_links_with_meta group by merged_id
+from {{staging_dataset}}.article_links_with_meta group by merged_id

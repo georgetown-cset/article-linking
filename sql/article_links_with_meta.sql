@@ -6,7 +6,7 @@ select
   b.year,
   b.clean_doi,
   b.last_names_norm
-from {{params.dataset}}.article_links a
+from {{staging_dataset}}.article_links a
 left join
-{{params.dataset}}.all_metadata_norm b
+{{staging_dataset}}.all_metadata_norm b
 on a.orig_id = b.id

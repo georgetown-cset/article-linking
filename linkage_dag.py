@@ -2,20 +2,19 @@ import json
 import os
 
 from airflow import DAG
-from airflow.contrib.operators.bigquery_operator import BigQueryOperator
-from airflow.contrib.operators.bigquery_check_operator import BigQueryCheckOperator
-from airflow.contrib.operators.bigquery_to_bigquery import BigQueryToBigQueryOperator
-from airflow.contrib.operators.dataflow_operator import DataFlowPythonOperator
-from airflow.contrib.operators.gcp_compute_operator import GceInstanceStartOperator, GceInstanceStopOperator
-from airflow.contrib.operators.gcs_delete_operator import GoogleCloudStorageDeleteOperator
-from airflow.contrib.operators.gcs_to_bq import GoogleCloudStorageToBigQueryOperator
-from airflow.contrib.operators.bigquery_to_gcs import BigQueryToCloudStorageOperator
-from airflow.operators.dagrun_operator import TriggerDagRunOperator
-from airflow.operators.bash_operator import BashOperator
-from airflow.operators import DummyOperator
-from airflow.operators.python_operator import PythonOperator
+from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator, BigQueryCheckOperator
+from airflow.providers.google.cloud.transfers.bigquery_to_bigquery import BigQueryToBigQueryOperator
+from airflow.providers.google.cloud.operators.dataflow import DataflowCreatePythonJobOperator
+from airflow.providers.google.cloud.operators.compute import ComputeEngineStartInstanceOperator, ComputeEngineStopInstanceOperator
+from airflow.providers.google.cloud.operators.gcs import GCSDeleteObjectsOperator
+from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
+from airflow.providers.google.cloud.transfers.bigquery_to_gcs import BigQueryToGCSOperator
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
+from airflow.operators.bash import BashOperator
+from airflow.operators.dummy import DummyOperator
+from airflow.operators.python import PythonOperator
 from airflow.hooks.base_hook import BaseHook
-from airflow.contrib.operators.slack_webhook_operator import SlackWebhookOperator
+from airflow.providers.slack.operators.slack import SlackAPIPostOperator
 from datetime import timedelta, datetime
 
 from dataloader.airflow_utils.slack import task_fail_slack_alert
@@ -34,19 +33,22 @@ default_args = {
     "on_failure_callback": task_fail_slack_alert
 }
 
-with DAG("article_linkage_updater1",
+staging_dataset = "staging_gcp_cset_links"
+production_dataset = "gcp_cset_links_v2"
+
+with DAG("article_linkage_updater",
             default_args=default_args,
             description="Links articles across our scholarly lit holdings.",
-            schedule_interval=None) as dag:
-    slack_webhook_token = BaseHook.get_connection("slack").password
+            schedule_interval=None,
+            user_defined_macros = {"staging_dataset": staging_dataset, "production_dataset": production_dataset}
+         ) as dag:
+    slack_webhook = BaseHook.get_connection("slack")
     bucket = "airflow-data-exchange"
     gcs_folder = "article_linkage"
     tmp_dir = f"{gcs_folder}/tmp"
     raw_data_dir = f"{gcs_folder}/data"
     schema_dir = f"{gcs_folder}/schemas"
     sql_dir = f"sql/{gcs_folder}"
-    staging_dataset = "staging_gcp_cset_links"
-    production_dataset = "gcp_cset_links_v2"
     backup_dataset = production_dataset+"_backups"
     project_id = "gcp-cset-projects"
     gce_zone = "us-east1-c"
@@ -55,7 +57,7 @@ with DAG("article_linkage_updater1",
 
     # We keep several intermediate outputs in a tmp dir on gcs, so clean it out at the start of each run. We clean at
     # the start of the run so if the run fails we can examine the failed data
-    clear_tmp_dir = GoogleCloudStorageDeleteOperator(
+    clear_tmp_dir = GCSDeleteObjectsOperator(
         task_id="clear_tmp_gcs_dir",
         bucket_name=bucket,
         prefix=tmp_dir + "/"
@@ -71,17 +73,22 @@ with DAG("article_linkage_updater1",
                                                            f"{gcs_folder}/generate_{dataset}_metadata.tsv")]
         # run the queries needed to generate the metadata tables
         for query_name in query_list:
-             ds_commands.append(BigQueryOperator(
+             ds_commands.append(BigQueryInsertJobOperator(
                 task_id=query_name,
-                sql=f"{sql_dir}/{query_name}.sql",
-                params={
-                    "dataset": staging_dataset
+                configuration={
+                    "query": {
+                        "query": "{% include '" + f"{sql_dir}/{query_name}.sql" + "' %}",
+                        "useLegacySql": False,
+                        "destinationTable": {
+                            "projectId": project_id,
+                            "datasetId": staging_dataset,
+                            "tableId": query_name
+                        },
+                        "allowLargeResults": True,
+                        "createDisposition": "CREATE_IF_NEEDED",
+                        "writeDisposition": "WRITE_TRUNCATE"
+                    }
                 },
-                destination_dataset_table=f"{staging_dataset}.{query_name}",
-                allow_large_results=True,
-                use_legacy_sql=False,
-                create_disposition="CREATE_IF_NEEDED",
-                write_disposition="WRITE_TRUNCATE"
             ))
         start = ds_commands[0]
         curr = ds_commands[0]
@@ -93,17 +100,22 @@ with DAG("article_linkage_updater1",
 
     # check that the ids are unique across corpora
     union_ids = BigQueryOperator(
-                    task_id="union_ids",
-                    sql=f"{sql_dir}/union_ids.sql",
-                    params={
-                        "dataset": staging_dataset
-                    },
-                    destination_dataset_table=f"{staging_dataset}.union_ids",
-                    allow_large_results=True,
-                    use_legacy_sql=False,
-                    create_disposition="CREATE_IF_NEEDED",
-                    write_disposition="WRITE_TRUNCATE"
-                )
+        task_id="union_ids",
+        configuration={
+            "query": {
+                "query": "{% include '" + f"{sql_dir}/union_ids.sql" + "' %}",
+                "useLegacySql": False,
+                "destinationTable": {
+                    "projectId": project_id,
+                    "datasetId": staging_dataset,
+                    "tableId": "union_ids"
+                },
+                "allowLargeResults": True,
+                "createDisposition": "CREATE_IF_NEEDED",
+                "writeDisposition": "WRITE_TRUNCATE"
+            }
+        },
+    )
 
     check_unique_input_ids = BigQueryCheckOperator(
             task_id="check_unique_input_ids",
@@ -113,20 +125,25 @@ with DAG("article_linkage_updater1",
 
     # We now take the union of all the metadata and export it to GCS for normalization via Dataflow. We then run
     # the Dataflow job, and import the outputs back into BQ
-    union_metadata = BigQueryOperator(
+    union_metadata = BigQueryInsertJobOperator(
         task_id="union_metadata",
-        sql=f"{sql_dir}/union_metadata.sql",
-        params={
-            "dataset": staging_dataset
+        configuration={
+            "query": {
+                "query": "{% include '" + f"{sql_dir}/union_metadata.sql" + "' %}",
+                "useLegacySql": False,
+                "destinationTable": {
+                    "projectId": project_id,
+                    "datasetId": staging_dataset,
+                    "tableId": "union_metadata"
+                },
+                "allowLargeResults": True,
+                "createDisposition": "CREATE_IF_NEEDED",
+                "writeDisposition": "WRITE_TRUNCATE"
+            }
         },
-        destination_dataset_table=f"{staging_dataset}.union_metadata",
-        allow_large_results=True,
-        use_legacy_sql=False,
-        create_disposition="CREATE_IF_NEEDED",
-        write_disposition="WRITE_TRUNCATE"
     )
 
-    export_metadata = BigQueryToCloudStorageOperator(
+    export_metadata = BigQueryToGCSOperator(
         task_id="export_metadata",
         source_project_dataset_table=f"{staging_dataset}.union_metadata",
         destination_cloud_storage_uris=f"gs://{bucket}/{tmp_dir}/union_meta/union*.jsonl",
@@ -140,7 +157,7 @@ with DAG("article_linkage_updater1",
         "max_num_workers": "100",
         "region": "us-east1",
         "temp_location": f"gs://{bucket}/{tmp_dir}/clean_dataflow",
-        "save_main_session": "",
+        "save_main_session": True,
         "requirements_file": f"{dags_dir}/requirements/article_linkage_text_clean_requirements.txt"
     }
     clean_corpus = DataFlowPythonOperator(
@@ -155,7 +172,7 @@ with DAG("article_linkage_updater1",
         },
     )
 
-    import_clean_metadata = GoogleCloudStorageToBigQueryOperator(
+    import_clean_metadata = GCSToBigQueryOperator(
         task_id="import_clean_metadata",
         bucket=bucket,
         source_objects=[f"{tmp_dir}/cleaned_meta/clean*"],
@@ -173,19 +190,22 @@ with DAG("article_linkage_updater1",
     combine_query_list = [t.strip() for t in open(f"{dags_dir}/sequences/"
                   f"{gcs_folder}/combine_metadata.tsv")]
     for query_name in combine_query_list:
-        combine_commands.append(BigQueryOperator(
+        combine_commands.append(BigQueryInsertJobOperator(
             task_id=query_name,
-            sql=f"{sql_dir}/{query_name}.sql",
-            params={
-                "dataset": staging_dataset,
-                "staging_dataset": staging_dataset,
-                "production_dataset": production_dataset
+            configuration={
+                "query": {
+                    "query": "{% include '" + f"{sql_dir}/{query_name}.sql" + "' %}",
+                    "useLegacySql": False,
+                    "destinationTable": {
+                        "projectId": project_id,
+                        "datasetId": staging_dataset,
+                        "tableId": query_name
+                    },
+                    "allowLargeResults": True,
+                    "createDisposition": "CREATE_IF_NEEDED",
+                    "writeDisposition": "WRITE_TRUNCATE"
+                }
             },
-            destination_dataset_table=f"{staging_dataset}.{query_name}",
-            allow_large_results=True,
-            use_legacy_sql=False,
-            create_disposition="CREATE_IF_NEEDED",
-            write_disposition="WRITE_TRUNCATE"
         ))
 
     wait_for_combine = DummyOperator(task_id="wait_for_combine")
@@ -195,44 +215,47 @@ with DAG("article_linkage_updater1",
                   f"{gcs_folder}/merge_combined_metadata.tsv")]
     last_combination_query = wait_for_combine
     for query_name in merge_combine_query_list:
-        next = BigQueryOperator(
+        next = BigQueryInsertJobOperator(
             task_id=query_name,
-            sql=f"{sql_dir}/{query_name}.sql",
-            params={
-                "dataset": staging_dataset,
-                "staging_dataset": staging_dataset,
-                "production_dataset": production_dataset
+            configuration={
+                "query": {
+                    "query": "{% include '" + f"{sql_dir}/{query_name}.sql" + "' %}",
+                    "useLegacySql": False,
+                    "destinationTable": {
+                        "projectId": project_id,
+                        "datasetId": staging_dataset,
+                        "tableId": query_name
+                    },
+                    "allowLargeResults": True,
+                    "createDisposition": "CREATE_IF_NEEDED",
+                    "writeDisposition": "WRITE_TRUNCATE"
+                }
             },
-            destination_dataset_table=f"{staging_dataset}.{query_name}",
-            allow_large_results=True,
-            use_legacy_sql=False,
-            create_disposition="CREATE_IF_NEEDED",
-            write_disposition="WRITE_TRUNCATE"
         )
         last_combination_query >> next
         last_combination_query = next
 
     # Now, we need to prep some inputs for RAM and CPU-intensive code that will run on "godzilla of article linkage".
     heavy_compute_inputs = [
-        BigQueryToCloudStorageOperator(
+        BigQueryToGCSOperator(
             task_id="export_old_cset_ids",
             source_project_dataset_table=f"{production_dataset}.article_links",
             destination_cloud_storage_uris=f"gs://{bucket}/{tmp_dir}/prev_id_mapping/prev_id_mapping*.jsonl",
             export_format="NEWLINE_DELIMITED_JSON"
         ),
-        BigQueryToCloudStorageOperator(
+        BigQueryToGCSOperator(
             task_id="export_article_pairs",
             source_project_dataset_table=f"{staging_dataset}.all_match_pairs_with_um",
             destination_cloud_storage_uris=f"gs://{bucket}/{tmp_dir}/article_pairs/article_pairs*.jsonl",
             export_format="NEWLINE_DELIMITED_JSON"
         ),
-        BigQueryToCloudStorageOperator(
+        BigQueryToGCSOperator(
             task_id="export_simhash_input",
             source_project_dataset_table=f"{staging_dataset}.simhash_input",
             destination_cloud_storage_uris=f"gs://{bucket}/{tmp_dir}/simhash_input/simhash_input*.jsonl",
             export_format="NEWLINE_DELIMITED_JSON"
         ),
-        BigQueryToCloudStorageOperator(
+        BigQueryToGCSOperator(
             task_id="export_lid_input",
             source_project_dataset_table=f"{staging_dataset}.lid_input",
             destination_cloud_storage_uris=f"gs://{bucket}/{tmp_dir}/lid_input/lid_input*.jsonl",
@@ -242,7 +265,7 @@ with DAG("article_linkage_updater1",
 
     # Start up godzilla of article linkage, update simhash indexes of title+abstract, run simhash, then create the
     # merge ids
-    gce_instance_start = GceInstanceStartOperator(
+    gce_instance_start = ComputeEngineStartInstanceOperator(
         project_id=project_id,
         zone=gce_zone,
         resource_id=gce_resource_id,
@@ -290,7 +313,7 @@ with DAG("article_linkage_updater1",
         "max_num_workers": "100",
         "region": "us-east1",
         "temp_location": f"gs://{bucket}/{tmp_dir}/run_lid",
-        "save_main_session": "",
+        "save_main_session": True,
         "requirements_file": f"{dags_dir}/requirements/article_linkage_lid_dataflow_requirements.txt"
     }
     run_lid = DataFlowPythonOperator(
@@ -307,14 +330,14 @@ with DAG("article_linkage_updater1",
 
     # turn off the expensive godzilla of article linkage when we're done with it, then import the id mappings and
     # lid back into BQ
-    gce_instance_stop = GceInstanceStopOperator(
+    gce_instance_stop = ComputeEngineStopInstanceOperator(
         project_id=project_id,
         zone=gce_zone,
         resource_id=gce_resource_id,
         task_id="stop-"+gce_resource_id
     )
 
-    import_id_mapping = GoogleCloudStorageToBigQueryOperator(
+    import_id_mapping = GCSToBigQueryOperator(
         task_id="import_id_mapping",
         bucket=bucket,
         source_objects=[f"{tmp_dir}/id_mapping.jsonl"],
@@ -325,7 +348,7 @@ with DAG("article_linkage_updater1",
         write_disposition="WRITE_TRUNCATE"
     )
 
-    import_lid = GoogleCloudStorageToBigQueryOperator(
+    import_lid = GCSToBigQueryOperator(
         task_id="import_lid",
         bucket=bucket,
         source_objects=[f"{tmp_dir}/lid_output/lid*"],
@@ -343,17 +366,22 @@ with DAG("article_linkage_updater1",
                                            f"{gcs_folder}/generate_merged_metadata.tsv")]
     last_transform_query = start_final_transform_queries
     for query_name in final_transform_queries:
-        next = BigQueryOperator(
+        next = BigQueryInsertJobOperator(
             task_id=query_name,
-            sql=f"{sql_dir}/{query_name}.sql",
-            params={
-                "dataset": staging_dataset
+            configuration={
+                "query": {
+                    "query": "{% include '" + f"{sql_dir}/{query_name}.sql" + "' %}",
+                    "useLegacySql": False,
+                    "destinationTable": {
+                        "projectId": project_id,
+                        "datasetId": staging_dataset,
+                        "tableId": query_name
+                    },
+                    "allowLargeResults": True,
+                    "createDisposition": "CREATE_IF_NEEDED",
+                    "writeDisposition": "WRITE_TRUNCATE"
+                }
             },
-            destination_dataset_table=f"{staging_dataset}.{query_name}",
-            allow_large_results=True,
-            use_legacy_sql=False,
-            create_disposition="CREATE_IF_NEEDED",
-            write_disposition="WRITE_TRUNCATE"
         )
         last_transform_query >> next
         last_transform_query = next
@@ -430,12 +458,20 @@ with DAG("article_linkage_updater1",
     push_to_production.append(
         BigQueryOperator(
             task_id="copy_mapped_references_to_paper_references_merged",
-            sql=f"select id as merged_id, ref_id from {staging_dataset}.mapped_references",
-            destination_dataset_table=f"{production_dataset}.paper_references_merged",
-            allow_large_results=True,
-            use_legacy_sql=False,
-            create_disposition="CREATE_IF_NEEDED",
-            write_disposition="WRITE_TRUNCATE"
+            configuration={
+                "query": {
+                    "query": f"select id as merged_id, ref_id from {staging_dataset}.mapped_references",
+                    "useLegacySql": False,
+                    "destinationTable": {
+                        "projectId": project_id,
+                        "datasetId": staging_dataset,
+                        "tableId": "paper_references_merged"
+                    },
+                    "allowLargeResults": True,
+                    "createDisposition": "CREATE_IF_NEEDED",
+                    "writeDisposition": "WRITE_TRUNCATE"
+                }
+            },
         )
     )
 
@@ -455,11 +491,11 @@ with DAG("article_linkage_updater1",
 
     wait_for_snapshots = DummyOperator(task_id="wait_for_snapshots")
 
-    success_alert = SlackWebhookOperator(
+    success_alert = SlackAPIPostOperator(
         task_id="post_success",
-        http_conn_id="slack",
-        webhook_token=slack_webhook_token,
-        message="Article linkage update succeeded!",
+        token=slack_webhook.password,
+        text="Article linkage update succeeded!",
+        channel=slack_webhook.login,
         username="airflow"
     )
 

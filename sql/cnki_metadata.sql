@@ -7,10 +7,10 @@ select
   a.year,
   a.last_names
 from
-  {{params.dataset}}.cnki_year_doi_authors a
+  {{staging_dataset}}.cnki_year_doi_authors a
 inner join
-  {{params.dataset}}.cnki_title b
+  {{staging_dataset}}.cnki_title b
 on a.id = b.id
 inner join
-  {{params.dataset}}.cnki_abstract c
+  {{staging_dataset}}.cnki_abstract c
 on a.id = c.id

@@ -10,7 +10,7 @@ select
   r.references
 from gcp_cset_mag.PapersWithAbstracts p
 left join
-{{params.dataset}}.mag_authors a
+{{staging_dataset}}.mag_authors a
 on p.PaperId = a.PaperId
 left join
   (select PaperId, string_agg(PaperReferenceId order by PaperReferenceId) as references

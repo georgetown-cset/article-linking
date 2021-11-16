@@ -10,6 +10,6 @@ SELECT
 FROM
   gcp_cset_digital_science.dimensions_publications_with_abstracts_latest d
 INNER JOIN
-  {{params.dataset}}.ds_authors a
+  {{staging_dataset}}.ds_authors a
 ON
   d.id = a.id

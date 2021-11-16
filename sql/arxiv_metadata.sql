@@ -9,5 +9,5 @@ select
   null as references -- arxiv doesn't have references
 from gcp_cset_arxiv_metadata.arxiv_metadata_latest p
 left join
-{{params.dataset}}.arxiv_authors a
+{{staging_dataset}}.arxiv_authors a
 on a.id = p.id
