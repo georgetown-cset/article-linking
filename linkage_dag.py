@@ -160,7 +160,7 @@ with DAG("article_linkage_updater",
         "save_main_session": True,
         "requirements_file": f"{dags_dir}/requirements/article_linkage_text_clean_requirements.txt"
     }
-    clean_corpus = DataFlowPythonOperator(
+    clean_corpus = DataflowCreatePythonJobOperator(
         py_file=f"{dags_dir}/linkage_scripts/clean_corpus.py",
         job_name="article_linkage_clean_corpus",
         task_id="clean_corpus",
@@ -316,7 +316,7 @@ with DAG("article_linkage_updater",
         "save_main_session": True,
         "requirements_file": f"{dags_dir}/requirements/article_linkage_lid_dataflow_requirements.txt"
     }
-    run_lid = DataFlowPythonOperator(
+    run_lid = DataflowCreatePythonJobOperator(
         py_file=f"{dags_dir}/linkage_scripts/run_lid.py",
         job_name="article_linkage_lid",
         task_id="run_lid",
