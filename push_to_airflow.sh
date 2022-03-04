@@ -1,4 +1,5 @@
 gsutil cp linkage_dag.py gs://us-east1-production-41653310-bucket/dags/
+gsutil cp scholarly_lit_trigger.py gs://us-east1-production-41653310-bucket/dags/
 gsutil -m cp sql/* gs://us-east1-production-41653310-bucket/dags/sql/article_linkage/
 gsutil -m cp sequences/* gs://us-east1-production-41653310-bucket/dags/sequences/article_linkage/
 gsutil cp schemas/* gs://airflow-data-exchange/article_linkage/schemas/
