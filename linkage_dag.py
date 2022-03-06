@@ -516,6 +516,7 @@ with DAG("article_linkage_updater",
     downstream_tasks = [
         TriggerDagRunOperator(task_id="trigger_article_classification", trigger_dag_id="article_classification"),
         TriggerDagRunOperator(task_id="trigger_fields_of_study", trigger_dag_id="fields_of_study"),
+        TriggerDagRunOperator(task_id="trigger_fields_of_study_v2", trigger_dag_id="fields_of_study_v2"),
     ]
 
     # task structure
