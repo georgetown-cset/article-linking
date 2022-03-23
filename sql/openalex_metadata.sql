@@ -31,3 +31,8 @@ LEFT JOIN
   author_names
 USING
   (id)
+WHERE
+  (type IS NULL)
+  OR NOT (type IN ("dataset",
+      "peer-review",
+      "grant"))
