@@ -19,6 +19,7 @@ from datetime import timedelta, datetime
 
 from dataloader.airflow_utils.slack import task_fail_slack_alert
 from dataloader.scripts.populate_documentation import update_table_descriptions
+from dataloader.airflow_utils.defaults import DATA_BUCKET, PROJECT_ID, GCP_ZONE
 
 
 default_args = {
@@ -43,15 +44,15 @@ with DAG("article_linkage_updater",
             user_defined_macros = {"staging_dataset": staging_dataset, "production_dataset": production_dataset}
          ) as dag:
     slack_webhook = BaseHook.get_connection("slack")
-    bucket = "airflow-data-exchange"
+    bucket = DATA_BUCKET
     gcs_folder = "article_linkage"
     tmp_dir = f"{gcs_folder}/tmp"
     raw_data_dir = f"{gcs_folder}/data"
     schema_dir = f"{gcs_folder}/schemas"
     sql_dir = f"sql/{gcs_folder}"
     backup_dataset = production_dataset+"_backups"
-    project_id = "gcp-cset-projects"
-    gce_zone = "us-east1-c"
+    project_id = PROJECT_ID
+    gce_zone = GCP_ZONE
     gce_resource_id = "godzilla-of-article-linkage"
     dags_dir = os.environ.get("DAGS_FOLDER")
 
