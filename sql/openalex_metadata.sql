@@ -1,4 +1,4 @@
-  -- get openalex combined metadata used in matching
+-- get openalex combined metadata used in matching
 WITH
   author_names AS (
   SELECT
@@ -8,8 +8,10 @@ WITH
     openalex.works
   CROSS JOIN
     UNNEST(authorships) AS authorship
+  WHERE
+    authorship.author.display_name IS NOT NULL
   GROUP BY
-    id)
+    id )
 SELECT
   id,
   title,

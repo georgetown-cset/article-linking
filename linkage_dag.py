@@ -68,7 +68,7 @@ with DAG("article_linkage_updater",
     # standard format
     metadata_sequences_start = []
     metadata_sequences_end = []
-    for dataset in ["arxiv", "cnki", "ds", "mag", "wos", "papers_with_code"]:
+    for dataset in ["arxiv", "cnki", "ds", "mag", "wos", "papers_with_code", "openalex"]:
         ds_commands = []
         query_list = [t.strip() for t in open(f"{dags_dir}/sequences/"
                                                            f"{gcs_folder}/generate_{dataset}_metadata.tsv")]
@@ -296,8 +296,8 @@ with DAG("article_linkage_updater",
         ("python3 create_merge_ids.py --match_dir usable_ids --prev_id_mapping_dir prev_id_mapping "
             "--merge_file id_mapping.jsonl --current_ids_dir article_pairs"),
         f"/snap/bin/gsutil -m cp id_mapping.jsonl gs://{bucket}/{gcs_folder}/tmp/",
-        f"/snap/bin/gsutil -m cp simhash_results/* gs://{bucket}/{gcs_folder}/simhash_results/",
-        f"/snap/bin/gsutil -m cp new_simhash_indexes/* gs://{bucket}/{gcs_folder}/simhash_indexes/"
+        f"/snap/bin/gsutil -m cp simhash_results/* gs://{bucket}/{gcs_folder}_oa_experiment/simhash_results/",
+        f"/snap/bin/gsutil -m cp new_simhash_indexes/* gs://{bucket}/{gcs_folder}_oa_experiment/simhash_indexes/"
     ]
     vm_script = " && ".join(vm_script_sequence)
 
@@ -514,11 +514,11 @@ with DAG("article_linkage_updater",
         )
         wait_for_snapshots >> pop_descriptions >> success_alert
 
-    downstream_tasks = [
-        TriggerDagRunOperator(task_id="trigger_article_classification", trigger_dag_id="article_classification"),
-        TriggerDagRunOperator(task_id="trigger_fields_of_study", trigger_dag_id="fields_of_study"),
-        TriggerDagRunOperator(task_id="trigger_new_fields_of_study", trigger_dag_id="new_fields_of_study"),
-    ]
+#    downstream_tasks = [
+#        TriggerDagRunOperator(task_id="trigger_article_classification", trigger_dag_id="article_classification"),
+#        TriggerDagRunOperator(task_id="trigger_fields_of_study", trigger_dag_id="fields_of_study"),
+#        TriggerDagRunOperator(task_id="trigger_new_fields_of_study", trigger_dag_id="new_fields_of_study"),
+#    ]
 
     # task structure
     clear_tmp_dir >> metadata_sequences_start
@@ -531,4 +531,4 @@ with DAG("article_linkage_updater",
     (last_transform_query >> check_queries >> start_production_cp >> push_to_production >> wait_for_production_copy >>
         snapshots >> wait_for_snapshots)
 
-    success_alert >> downstream_tasks
+    success_alert #>> downstream_tasks
