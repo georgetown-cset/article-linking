@@ -16,7 +16,7 @@ SELECT
   id,
   title,
   abstract,
-  LOWER(doi) AS clean_doi,
+  REPLACE(LOWER(doi), "https://doi.org/", "") AS clean_doi,
   publication_year AS year,
   -- full names, not last names, but the cleaning script will turn them into last names
   last_names,
