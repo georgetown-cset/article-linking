@@ -296,8 +296,8 @@ with DAG("article_linkage_updater",
         ("python3 create_merge_ids.py --match_dir usable_ids --prev_id_mapping_dir prev_id_mapping "
             "--merge_file id_mapping.jsonl --current_ids_dir article_pairs"),
         f"/snap/bin/gsutil -m cp id_mapping.jsonl gs://{bucket}/{gcs_folder}/tmp/",
-        f"/snap/bin/gsutil -m cp simhash_results/* gs://{bucket}/{gcs_folder}_oa_experiment/simhash_results/",
-        f"/snap/bin/gsutil -m cp new_simhash_indexes/* gs://{bucket}/{gcs_folder}_oa_experiment/simhash_indexes/"
+        f"/snap/bin/gsutil -m cp simhash_results/* gs://{bucket}/{gcs_folder}/simhash_results/",
+        f"/snap/bin/gsutil -m cp new_simhash_indexes/* gs://{bucket}/{gcs_folder}/simhash_indexes/"
     ]
     vm_script = " && ".join(vm_script_sequence)
 
