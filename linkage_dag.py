@@ -29,7 +29,7 @@ default_args = {
     "email": ["jennifer.melot@georgetown.edu"],
     "email_on_failure": True,
     "email_on_retry": True,
-    "retries": 1,
+    "retries": 0,
     "retry_delay": timedelta(minutes=5),
     "on_failure_callback": task_fail_slack_alert
 }
@@ -514,11 +514,11 @@ with DAG("article_linkage_updater",
         )
         wait_for_snapshots >> pop_descriptions >> success_alert
 
-#    downstream_tasks = [
-#        TriggerDagRunOperator(task_id="trigger_article_classification", trigger_dag_id="article_classification"),
-#        TriggerDagRunOperator(task_id="trigger_fields_of_study", trigger_dag_id="fields_of_study"),
-#        TriggerDagRunOperator(task_id="trigger_new_fields_of_study", trigger_dag_id="new_fields_of_study"),
-#    ]
+    downstream_tasks = [
+        TriggerDagRunOperator(task_id="trigger_article_classification", trigger_dag_id="article_classification"),
+        TriggerDagRunOperator(task_id="trigger_fields_of_study", trigger_dag_id="fields_of_study"),
+        TriggerDagRunOperator(task_id="trigger_new_fields_of_study", trigger_dag_id="new_fields_of_study"),
+    ]
 
     # task structure
     clear_tmp_dir >> metadata_sequences_start
@@ -531,4 +531,4 @@ with DAG("article_linkage_updater",
     (last_transform_query >> check_queries >> start_production_cp >> push_to_production >> wait_for_production_copy >>
         snapshots >> wait_for_snapshots)
 
-    success_alert #>> downstream_tasks
+    success_alert >> downstream_tasks
