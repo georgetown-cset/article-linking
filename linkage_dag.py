@@ -169,7 +169,8 @@ with DAG("article_linkage_updater",
         options={
             "input_dir": f"gs://{bucket}/{tmp_dir}/union_meta/union*",
             "output_dir": f"gs://{bucket}/{tmp_dir}/cleaned_meta/clean",
-            "fields_to_clean": "title,abstract,last_names"
+            "fields_to_clean": "title,abstract,last_names",
+            "region": "us-east1"
         },
     )
 
@@ -325,7 +326,8 @@ with DAG("article_linkage_updater",
         options={
             "input_dir": f"gs://{bucket}/{tmp_dir}/lid_input/lid_input*",
             "output_dir": f"gs://{bucket}/{tmp_dir}/lid_output/lid",
-            "fields_to_lid": "title,abstract"
+            "fields_to_lid": "title,abstract",
+            "region": "us-east1"
         },
     )
 
