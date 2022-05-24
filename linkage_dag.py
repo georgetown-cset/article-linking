@@ -29,7 +29,7 @@ default_args = {
     "email": ["jennifer.melot@georgetown.edu"],
     "email_on_failure": True,
     "email_on_retry": True,
-    "retries": 1,
+    "retries": 0,
     "retry_delay": timedelta(minutes=5),
     "on_failure_callback": task_fail_slack_alert
 }
@@ -68,7 +68,7 @@ with DAG("article_linkage_updater",
     # standard format
     metadata_sequences_start = []
     metadata_sequences_end = []
-    for dataset in ["arxiv", "cnki", "ds", "mag", "wos", "papers_with_code"]:
+    for dataset in ["arxiv", "cnki", "ds", "mag", "wos", "papers_with_code", "openalex"]:
         ds_commands = []
         query_list = [t.strip() for t in open(f"{dags_dir}/sequences/"
                                                            f"{gcs_folder}/generate_{dataset}_metadata.tsv")]
