@@ -8,7 +8,8 @@ WITH
   FROM
     openalex.works
   WHERE
-    ids.mag IS NOT NULL
+    (ids.mag IS NOT NULL) AND ((type IS NULL)
+        OR NOT (type IN ("dataset", "peer-review", "grant")))
   UNION ALL
   SELECT
     ids.mag AS id1,
@@ -16,7 +17,9 @@ WITH
   FROM
     openalex.works
   WHERE
-    ids.mag IS NOT NULL ),
+    (ids.mag IS NOT NULL) AND ((type IS NULL)
+        OR NOT (type IN ("dataset", "peer-review", "grant")))
+    ),
   pairs AS ( (
     SELECT
       id AS id1,
