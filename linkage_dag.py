@@ -467,7 +467,7 @@ with DAG("article_linkage_updater",
                     "useLegacySql": False,
                     "destinationTable": {
                         "projectId": project_id,
-                        "datasetId": staging_dataset,
+                        "datasetId": production_dataset,
                         "tableId": "paper_references_merged"
                     },
                     "allowLargeResults": True,
