@@ -35,7 +35,7 @@ default_args = {
 }
 
 staging_dataset = "staging_gcp_cset_links"
-production_dataset = "gcp_cset_links_v2"
+production_dataset = "gcp_cset_links_v3"
 
 with DAG("article_linkage_updater",
             default_args=default_args,
