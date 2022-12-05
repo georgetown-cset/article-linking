@@ -84,7 +84,7 @@ WITH oa_matches AS (
       id AS id1,
       id AS id2
     FROM
-      {{staging_dataset}}.all_metadata_norm
+      {{staging_dataset}}.all_metadata_norm_filt
     WHERE
       id NOT IN (
       SELECT

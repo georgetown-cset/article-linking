@@ -39,9 +39,10 @@ def write_sim_strings(data_fi: str, output_fi: str, input_index: str = None, out
     for article_id, article_text in data_ids_and_values:
         feats = Simhash(get_features(article_text))
         dup_ids = index.get_near_dups(feats)
-        for dup_id in dup_ids:
-            if dup_id != article_id:
-                out.write(json.dumps({"id1": article_id, "id2": dup_id}) + "\n")
+        if len(dup_ids) < 11:
+            for dup_id in dup_ids:
+                if dup_id != article_id:
+                    out.write(json.dumps({"id1": article_id, "id2": dup_id}) + "\n")
 
 
 def get_year_partition(input_dir: str, output_dir: str) -> list:
