@@ -30,7 +30,7 @@ with DAG("article_linkage_updater",
             user_defined_macros = {"staging_dataset": staging_dataset, "production_dataset": production_dataset}
          ) as dag:
     bucket = DATA_BUCKET
-    gcs_folder = "article_linkage"
+    gcs_folder = "article_linkage_v3"
     tmp_dir = f"{gcs_folder}/tmp"
     raw_data_dir = f"{gcs_folder}/data"
     schema_dir = f"{gcs_folder}/schemas"
@@ -38,7 +38,8 @@ with DAG("article_linkage_updater",
     backup_dataset = production_dataset+"_backups"
     project_id = PROJECT_ID
     gce_zone = GCP_ZONE
-    gce_resource_id = "godzilla-of-article-linkage"
+    gce_resource_id = "godzilla-of-article-linkage-v3"
+    dags_dir = os.environ.get("DAGS_FOLDER")
 
     # We keep several intermediate outputs in a tmp dir on gcs, so clean it out at the start of each run. We clean at
     # the start of the run so if the run fails we can examine the failed data
@@ -143,10 +144,10 @@ with DAG("article_linkage_updater",
         "region": "us-east1",
         "temp_location": f"gs://{bucket}/{tmp_dir}/clean_dataflow",
         "save_main_session": True,
-        "requirements_file": f"{DAGS_DIR}/requirements/article_linkage_text_clean_requirements.txt"
+        "requirements_file": f"{dags_dir}/requirements/article_linkage_v3_text_clean_requirements.txt"
     }
     clean_corpus = DataflowCreatePythonJobOperator(
-        py_file=f"{DAGS_DIR}/linkage_scripts/clean_corpus.py",
+        py_file=f"{dags_dir}/linkage_scripts_v3/clean_corpus.py",
         job_name="article_linkage_clean_corpus",
         task_id="clean_corpus",
         dataflow_default_options=dataflow_options,
@@ -334,10 +335,10 @@ with DAG("article_linkage_updater",
         "region": "us-east1",
         "temp_location": f"gs://{bucket}/{tmp_dir}/run_lid",
         "save_main_session": True,
-        "requirements_file": f"{DAGS_DIR}/requirements/article_linkage_lid_dataflow_requirements.txt"
+        "requirements_file": f"{dags_dir}/requirements/article_linkage_v3_lid_dataflow_requirements.txt"
     }
     run_lid = DataflowCreatePythonJobOperator(
-        py_file=f"{DAGS_DIR}/linkage_scripts/run_lid.py",
+        py_file=f"{dags_dir}/linkage_scripts_v3/run_lid.py",
         job_name="article_linkage_lid",
         task_id="run_lid",
         dataflow_default_options=lid_dataflow_options,
