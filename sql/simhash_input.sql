@@ -3,13 +3,13 @@ select
   id,
   year,
   concat(title_norm, abstract_norm) as normalized_text
-from {{staging_dataset}}.all_metadata_norm
+from {{staging_dataset}}.all_metadata_norm_filt
 where
     (year is not null) and
     (title_norm is not null) and (title_norm != "") and
     (abstract_norm is not null) and (abstract_norm != "") and
     id not in (
-      select a.id from {{staging_dataset}}.all_metadata_norm a
+      select a.id from {{staging_dataset}}.all_metadata_norm_filt a
       left join
       {{production_dataset}}.all_metadata_with_cld2_lid b
       on a.id = b.id
