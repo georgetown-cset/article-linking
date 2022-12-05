@@ -185,6 +185,24 @@ with DAG("article_linkage_updater",
         write_disposition="WRITE_TRUNCATE"
     )
 
+    filter_norm_metadata = BigQueryInsertJobOperator(
+        task_id="filter_norm_metadata",
+        configuration={
+            "query": {
+                "query": "{% include '" + f"{sql_dir}/all_metadata_norm_filt.sql" + "' %}",
+                "useLegacySql": False,
+                "destinationTable": {
+                    "projectId": project_id,
+                    "datasetId": staging_dataset,
+                    "tableId": "all_metadata_norm_filt",
+                },
+                "allowLargeResults": True,
+                "createDisposition": "CREATE_IF_NEEDED",
+                "writeDisposition": "WRITE_TRUNCATE",
+            }
+        },
+    )
+
     # It's now time to create the match pairs that can be found using combinations of three exact (modulo normalization)
     # metadata matches. We can do the individual combinations of triples of matches in parallel, but then need to
     # aggregate in series
@@ -525,7 +543,7 @@ with DAG("article_linkage_updater",
     # task structure
     clear_tmp_dir >> metadata_sequences_start
     (metadata_sequences_end >> union_ids >> check_unique_input_ids >> union_metadata >> export_metadata >>
-        clean_corpus >> import_clean_metadata >> combine_commands >> wait_for_combine)
+        clean_corpus >> import_clean_metadata >> filter_norm_metadata >> combine_commands >> wait_for_combine)
 
     (last_combination_query >> heavy_compute_inputs >> gce_instance_start >> [create_cset_ids, run_lid] >>
         gce_instance_stop >> [import_id_mapping, import_lid] >> start_final_transform_queries)
