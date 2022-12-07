@@ -279,9 +279,9 @@ with DAG("article_linkage_updater_v3",
 
     vm_script_sequence = [
         "cd /mnt/disks/data",
-        "rm -rf run",
-        "mkdir run",
-        "cd run",
+        "rm -rf run_v3",
+        "mkdir run_v3",
+        "cd run_v3",
         f"/snap/bin/gsutil cp gs://{bucket}/{gcs_folder}/vm_scripts/* .",
         "rm -rf input_data",
         "rm -rf current_ids",
@@ -336,12 +336,15 @@ with DAG("article_linkage_updater_v3",
 
     # turn off the expensive godzilla of article linkage when we're done with it, then import the id mappings and
     # lid back into BQ
-    gce_instance_stop = ComputeEngineStopInstanceOperator(
-        project_id=project_id,
-        zone=gce_zone,
-        resource_id=gce_resource_id,
-        task_id="stop-"+gce_resource_id
-    )
+
+    # commenting this out until gcp approves my request to increase our M1 CPU quota...
+#    gce_instance_stop = ComputeEngineStopInstanceOperator(
+#        project_id=project_id,
+#        zone=gce_zone,
+#        resource_id=gce_resource_id,
+#        task_id="stop-"+gce_resource_id
+#    )
+    gce_instance_stop = DummyOperator(task_id="fake_instance_stop")
 
     import_id_mapping = GCSToBigQueryOperator(
         task_id="import_id_mapping",
