@@ -5,12 +5,16 @@ select
   c.abstract,
   a.clean_doi,
   a.year,
-  a.last_names
+  a.last_names,
+  references
 from
-  {{staging_dataset}}.cnki_year_doi_authors a
+  {{ staging_dataset }}.cnki_year_doi_authors a
 inner join
-  {{staging_dataset}}.cnki_title b
+  {{ staging_dataset }}.cnki_title b
 on a.id = b.id
 inner join
-  {{staging_dataset}}.cnki_abstract c
+  {{ staging_dataset }}.cnki_abstract c
 on a.id = c.id
+left join
+  {{ staging_dataset }}.orig_id_references
+on a.id = orig_id_references.orig_id
