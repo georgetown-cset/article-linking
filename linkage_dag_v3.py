@@ -64,6 +64,25 @@ with DAG("article_linkage_updater_v3",
         prefix=tmp_dir + "/"
     )
 
+    # Aggregate merged references from last run; we'll use these as a factor in article deduplication
+    orig_id_references = BigQueryInsertJobOperator(
+        task_id="orig_id_references",
+        configuration={
+            "query": {
+                "query": "{% include '" + f"{sql_dir}/orig_id_references.sql" + "' %}",
+                "useLegacySql": False,
+                "destinationTable": {
+                    "projectId": project_id,
+                    "datasetId": staging_dataset,
+                    "tableId": "orig_id_references"
+                },
+                "allowLargeResults": True,
+                "createDisposition": "CREATE_IF_NEEDED",
+                "writeDisposition": "WRITE_TRUNCATE"
+            }
+        },
+    )
+
     # Next, we'll run a different set of queries for each dataset to convert the metadata we use in the match to a
     # standard format
     metadata_sequences_start = []
@@ -544,7 +563,7 @@ with DAG("article_linkage_updater_v3",
     ]
 
     # task structure
-    clear_tmp_dir >> metadata_sequences_start
+    clear_tmp_dir >> orig_id_references >> metadata_sequences_start
     (metadata_sequences_end >> union_ids >> check_unique_input_ids >> union_metadata >> export_metadata >>
         clean_corpus >> import_clean_metadata >> filter_norm_metadata >> combine_commands >> wait_for_combine)
 
