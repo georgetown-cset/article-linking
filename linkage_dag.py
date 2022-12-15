@@ -13,37 +13,22 @@ from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from airflow.operators.bash import BashOperator
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.python import PythonOperator
-from airflow.hooks.base_hook import BaseHook
-from airflow.providers.slack.operators.slack import SlackAPIPostOperator
-from datetime import timedelta, datetime
+from datetime import datetime
 
-from dataloader.airflow_utils.slack import task_fail_slack_alert
 from dataloader.scripts.populate_documentation import update_table_descriptions
-from dataloader.airflow_utils.defaults import DATA_BUCKET, PROJECT_ID, GCP_ZONE
+from dataloader.airflow_utils.defaults import DATA_BUCKET, PROJECT_ID, GCP_ZONE, \
+    DAGS_DIR, get_default_args, get_post_success
 
-
-default_args = {
-    "owner": "airflow",
-    "depends_on_past": False,
-    "start_date": datetime(2020, 12, 12),
-    "email": ["jennifer.melot@georgetown.edu"],
-    "email_on_failure": True,
-    "email_on_retry": True,
-    "retries": 0,
-    "retry_delay": timedelta(minutes=5),
-    "on_failure_callback": task_fail_slack_alert
-}
 
 staging_dataset = "staging_gcp_cset_links"
 production_dataset = "gcp_cset_links_v2"
 
 with DAG("article_linkage_updater",
-            default_args=default_args,
+            default_args=get_default_args(),
             description="Links articles across our scholarly lit holdings.",
             schedule_interval=None,
             user_defined_macros = {"staging_dataset": staging_dataset, "production_dataset": production_dataset}
          ) as dag:
-    slack_webhook = BaseHook.get_connection("slack")
     bucket = DATA_BUCKET
     gcs_folder = "article_linkage"
     tmp_dir = f"{gcs_folder}/tmp"
@@ -54,7 +39,6 @@ with DAG("article_linkage_updater",
     project_id = PROJECT_ID
     gce_zone = GCP_ZONE
     gce_resource_id = "godzilla-of-article-linkage"
-    dags_dir = os.environ.get("DAGS_FOLDER")
 
     # We keep several intermediate outputs in a tmp dir on gcs, so clean it out at the start of each run. We clean at
     # the start of the run so if the run fails we can examine the failed data
@@ -70,7 +54,7 @@ with DAG("article_linkage_updater",
     metadata_sequences_end = []
     for dataset in ["arxiv", "cnki", "ds", "mag", "wos", "papers_with_code", "openalex"]:
         ds_commands = []
-        query_list = [t.strip() for t in open(f"{dags_dir}/sequences/"
+        query_list = [t.strip() for t in open(f"{DAGS_DIR}/sequences/"
                                                            f"{gcs_folder}/generate_{dataset}_metadata.tsv")]
         # run the queries needed to generate the metadata tables
         for query_name in query_list:
@@ -159,10 +143,10 @@ with DAG("article_linkage_updater",
         "region": "us-east1",
         "temp_location": f"gs://{bucket}/{tmp_dir}/clean_dataflow",
         "save_main_session": True,
-        "requirements_file": f"{dags_dir}/requirements/article_linkage_text_clean_requirements.txt"
+        "requirements_file": f"{DAGS_DIR}/requirements/article_linkage_text_clean_requirements.txt"
     }
     clean_corpus = DataflowCreatePythonJobOperator(
-        py_file=f"{dags_dir}/linkage_scripts/clean_corpus.py",
+        py_file=f"{DAGS_DIR}/linkage_scripts/clean_corpus.py",
         job_name="article_linkage_clean_corpus",
         task_id="clean_corpus",
         dataflow_default_options=dataflow_options,
@@ -189,7 +173,7 @@ with DAG("article_linkage_updater",
     # metadata matches. We can do the individual combinations of triples of matches in parallel, but then need to
     # aggregate in series
     combine_commands = []
-    combine_query_list = [t.strip() for t in open(f"{dags_dir}/sequences/"
+    combine_query_list = [t.strip() for t in open(f"{DAGS_DIR}/sequences/"
                   f"{gcs_folder}/combine_metadata.tsv")]
     for query_name in combine_query_list:
         combine_commands.append(BigQueryInsertJobOperator(
@@ -213,7 +197,7 @@ with DAG("article_linkage_updater",
     wait_for_combine = DummyOperator(task_id="wait_for_combine")
 
     merge_combine_commands = []
-    merge_combine_query_list = [t.strip() for t in open(f"{dags_dir}/sequences/"
+    merge_combine_query_list = [t.strip() for t in open(f"{DAGS_DIR}/sequences/"
                   f"{gcs_folder}/merge_combined_metadata.tsv")]
     last_combination_query = wait_for_combine
     for query_name in merge_combine_query_list:
@@ -316,10 +300,10 @@ with DAG("article_linkage_updater",
         "region": "us-east1",
         "temp_location": f"gs://{bucket}/{tmp_dir}/run_lid",
         "save_main_session": True,
-        "requirements_file": f"{dags_dir}/requirements/article_linkage_lid_dataflow_requirements.txt"
+        "requirements_file": f"{DAGS_DIR}/requirements/article_linkage_lid_dataflow_requirements.txt"
     }
     run_lid = DataflowCreatePythonJobOperator(
-        py_file=f"{dags_dir}/linkage_scripts/run_lid.py",
+        py_file=f"{DAGS_DIR}/linkage_scripts/run_lid.py",
         job_name="article_linkage_lid",
         task_id="run_lid",
         dataflow_default_options=lid_dataflow_options,
@@ -365,7 +349,7 @@ with DAG("article_linkage_updater",
     # generate the rest of the tables that will be copied to the production dataset
     start_final_transform_queries = DummyOperator(task_id="start_final_transform")
 
-    final_transform_queries = [t.strip() for t in open(f"{dags_dir}/sequences/"
+    final_transform_queries = [t.strip() for t in open(f"{DAGS_DIR}/sequences/"
                                            f"{gcs_folder}/generate_merged_metadata.tsv")]
     last_transform_query = start_final_transform_queries
     for query_name in final_transform_queries:
@@ -494,13 +478,7 @@ with DAG("article_linkage_updater",
 
     wait_for_snapshots = DummyOperator(task_id="wait_for_snapshots")
 
-    success_alert = SlackAPIPostOperator(
-        task_id="post_success",
-        token=slack_webhook.password,
-        text="Article linkage update succeeded!",
-        channel=slack_webhook.login,
-        username="airflow"
-    )
+    success_alert = get_post_success("Article linkage update succeeded!", dag)
 
     with open(f"{os.environ.get('DAGS_FOLDER')}/schemas/{gcs_folder}/table_descriptions.json") as f:
         table_desc = json.loads(f.read())
