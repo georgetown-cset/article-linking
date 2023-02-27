@@ -38,7 +38,7 @@ with DAG("article_linkage_updater_v3",
     backup_dataset = production_dataset+"_backups"
     project_id = PROJECT_ID
     gce_zone = GCP_ZONE
-    gce_resource_id = "godzilla-of-article-linkage"
+    gce_resource_id = "godzilla-of-article-linkage-v3"
     dags_dir = os.environ.get("DAGS_FOLDER")
 
     # We keep several intermediate outputs in a tmp dir on gcs, so clean it out at the start of each run. We clean at
