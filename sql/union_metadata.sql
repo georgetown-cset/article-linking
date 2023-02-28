@@ -26,3 +26,7 @@ UNION ALL
 select id, title, abstract, clean_doi, year, last_names,
   references, "openalex" as dataset
 from {{staging_dataset}}.openalex_metadata
+UNION ALL
+select id, title, abstract, clean_doi, year, last_names,
+  references, "s2" as dataset
+from {{staging_dataset}}.s2_metadata
