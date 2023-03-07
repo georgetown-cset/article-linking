@@ -40,6 +40,45 @@ WITH oa_matches AS (
       (externalids.MAG is not null) and NOT
         (publication_type IN ("Dataset", "Editorial", "LettersAndComments", "News", "Review"))
   ),
+  ds_arxiv_matches AS (
+    SELECT
+      id as id1,
+      replace(arxiv_id, "arXiv:", "") as id2
+    FROM
+      gcp_cset_digital_science.dimensions_publications_latest
+    WHERE
+      (arxiv_id is not null)
+    UNION ALL
+    SELECT
+      replace(arxiv_id, "arXiv:", "") as id1,
+      id as id2
+    FROM
+      gcp_cset_digital_science.dimensions_publications_latest
+    WHERE
+      (arxiv_id is not null)
+  ),
+  raw_oa_arxiv_matches AS (
+    SELECT
+      id as oa_id,
+      replace(regexp_replace(open_access.oa_url, r".*(/ftp/arxiv/papers/|/pdf/|/abs/)", ""), ".pdf", "") as arxiv_id
+    FROM
+      openalex.works
+    WHERE
+      (lower(open_access.oa_url) like "%/arxiv.org%")
+  ),
+  oa_arxiv_matches AS (
+    SELECT
+      oa_id as id1,
+      arxiv_id as id2
+    FROM
+      raw_oa_arxiv_matches
+    UNION ALL
+    SELECT
+      arxiv_id as id1,
+      oa_id as id2
+    FROM
+      raw_oa_arxiv_matches
+  ),
   pairs AS ( (
     SELECT
       id AS id1,
@@ -61,25 +100,47 @@ WITH oa_matches AS (
         id1
       FROM
         s2_matches
-      ))
-  UNION ALL (
+      ) AND id NOT IN (
+      SELECT
+        id1
+      FROM
+        ds_arxiv_matches)
+      AND id NOT IN (
+      SELECT
+        id1
+      FROM
+        oa_arxiv_matches))
+    UNION ALL (
+      SELECT
+        all1_id AS id1,
+        all2_id AS id2
+      FROM
+        {{staging_dataset}}.metadata_self_triple_match)
+    UNION ALL
     SELECT
-      all1_id AS id1,
-      all2_id AS id2
+      id1,
+      id2
     FROM
-      {{staging_dataset}}.metadata_self_triple_match)
-  UNION ALL
-  SELECT
-    id1,
-    id2
-  FROM
-    oa_matches
-  UNION ALL
-  SELECT
-    id1,
-    id2
-  FROM
-    s2_matches )
+      oa_matches
+    UNION ALL
+    SELECT
+      id1,
+      id2
+    FROM
+      s2_matches 
+    UNION ALL
+    SELECT
+      id1,
+      id2
+    FROM
+      ds_arxiv_matches
+    UNION ALL
+    SELECT
+      id1,
+      id2
+    FROM
+      oa_arxiv_matches
+  )
 SELECT
   DISTINCT id1,
   id2
