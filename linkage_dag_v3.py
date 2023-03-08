@@ -338,13 +338,12 @@ with DAG("article_linkage_updater_v3",
     # lid back into BQ
 
     # commenting this out until gcp approves my request to increase our M1 CPU quota...
-#    gce_instance_stop = ComputeEngineStopInstanceOperator(
-#        project_id=project_id,
-#        zone=gce_zone,
-#        resource_id=gce_resource_id,
-#        task_id="stop-"+gce_resource_id
-#    )
-    gce_instance_stop = DummyOperator(task_id="fake_instance_stop")
+    gce_instance_stop = ComputeEngineStopInstanceOperator(
+        project_id=project_id,
+        zone=gce_zone,
+        resource_id=gce_resource_id,
+        task_id="stop-"+gce_resource_id
+    )
 
     import_id_mapping = GCSToBigQueryOperator(
         task_id="import_id_mapping",
