@@ -37,7 +37,7 @@ with DAG("article_linkage_updater",
     sql_dir = f"sql/{gcs_folder}"
     backup_dataset = production_dataset+"_backups"
     project_id = PROJECT_ID
-    gce_zone = GCP_ZONE
+    gce_zone = "us-east1-b"
     gce_resource_id = "godzilla-of-article-linkage-v3"
     dags_dir = os.environ.get("DAGS_FOLDER")
 
