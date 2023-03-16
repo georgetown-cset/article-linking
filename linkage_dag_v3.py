@@ -244,7 +244,7 @@ with DAG("article_linkage_updater_v3",
     heavy_compute_inputs = [
         BigQueryToGCSOperator(
             task_id="export_old_cset_ids",
-            source_project_dataset_table=f"{production_dataset}.article_links",
+            source_project_dataset_table=f"gcp_cset_links_v2.article_links",
             destination_cloud_storage_uris=f"gs://{bucket}/{tmp_dir}/prev_id_mapping/prev_id_mapping*.jsonl",
             export_format="NEWLINE_DELIMITED_JSON"
         ),
