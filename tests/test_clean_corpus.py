@@ -32,4 +32,4 @@ class TestCleanCorpus(unittest.TestCase):
             "last_names_norm": "li smith 界"
         }
         scrubber_output_generator = self.scrubber.process(json.dumps(input_record))
-        self.assertEqual(expected_output_record, list(scrubber_output_generator)[0])
+        self.assertEqual(json.dumps(expected_output_record), list(scrubber_output_generator)[0])
