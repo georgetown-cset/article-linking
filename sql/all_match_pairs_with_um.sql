@@ -1,7 +1,6 @@
 -- add "self matches" for the articles that didn't match anything (this can happen if the article has a lot of null
 -- fields) to the rest of the article match pairs
-WITH
-  oa_matches AS (
+WITH oa_matches AS (
   SELECT
     id AS id1,
     ids.mag AS id2
@@ -19,7 +18,28 @@ WITH
   WHERE
     (ids.mag IS NOT NULL) AND ((type IS NULL)
         OR NOT (type IN ("dataset", "peer-review", "grant")))
-    ),
+  ),
+  s2_matches AS (
+    SELECT
+      CAST(corpusid AS string) as id1,
+      CAST(externalids.MAG AS string) as id2
+    FROM
+      semantic_scholar.papers
+    CROSS JOIN unnest(publicationtypes) as publication_type
+    WHERE
+      (externalids.MAG is not null) and NOT
+        (publication_type IN ("Dataset", "Editorial", "LettersAndComments", "News", "Review"))
+    UNION ALL
+    SELECT
+      CAST(externalids.MAG AS string) as id1,
+      CAST(corpusid AS string) as id2
+    FROM
+      semantic_scholar.papers
+    CROSS JOIN unnest(publicationtypes) as publication_type
+    WHERE
+      (externalids.MAG is not null) and NOT
+        (publication_type IN ("Dataset", "Editorial", "LettersAndComments", "News", "Review"))
+  ),
   pairs AS ( (
     SELECT
       id AS id1,
@@ -36,7 +56,12 @@ WITH
       SELECT
         id1
       FROM
-        oa_matches))
+        oa_matches) AND id NOT IN (
+      SELECT
+        id1
+      FROM
+        s2_matches
+      ))
   UNION ALL (
     SELECT
       all1_id AS id1,
@@ -48,7 +73,13 @@ WITH
     id1,
     id2
   FROM
-    oa_matches )
+    oa_matches
+  UNION ALL
+  SELECT
+    id1,
+    id2
+  FROM
+    s2_matches )
 SELECT
   DISTINCT id1,
   id2
