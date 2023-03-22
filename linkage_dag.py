@@ -52,7 +52,7 @@ with DAG("article_linkage_updater",
     # standard format
     metadata_sequences_start = []
     metadata_sequences_end = []
-    for dataset in ["arxiv", "cnki", "mag", "wos", "papers_with_code", "openalex", "s2"]:
+    for dataset in ["arxiv", "cnki", "wos", "papers_with_code", "openalex", "s2"]:
         ds_commands = []
         query_list = [t.strip() for t in open(f"{DAGS_DIR}/sequences/"
                                                            f"{gcs_folder}/generate_{dataset}_metadata.tsv")]

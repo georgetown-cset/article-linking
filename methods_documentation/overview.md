@@ -5,8 +5,8 @@ match article metadata, we first need to extract the columns from this data that
 in matching into a consistent set of tables.
 
 To do this, we run the SQL queries specified in the `sequences/generate_{dataset}_data.tsv` sequence files
-within our airflow DAG. Mostly this is fairly straightforward, but it's worth noting that for MAG we exclude
-documents with a `DocType` of Dataset or Patent. Additionally, we take every combination of the WOS
+within our airflow DAG. Mostly this is fairly straightforward, but it's worth noting that for OpenAlex we exclude
+documents with a `type` of Dataset, Peer Review, or Grant. Additionally, we take every combination of the WOS
 titles, abstracts, and pubyear so that a match on any of these combinations will result in a match on
 the shared WOS id.
 
