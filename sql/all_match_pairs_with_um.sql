@@ -28,7 +28,7 @@ WITH oa_matches AS (
     CROSS JOIN unnest(publicationtypes) as publication_type
     WHERE
       (externalids.MAG is not null) and NOT
-        (publication_type IN ("Dataset", "LettersAndComments", "ClinicalTrial", "Review"))
+        (publication_type IN ("Dataset", "Editorial", "LettersAndComments", "News", "Review"))
     UNION ALL
     SELECT
       CAST(externalids.MAG AS string) as id1,
@@ -38,7 +38,7 @@ WITH oa_matches AS (
     CROSS JOIN unnest(publicationtypes) as publication_type
     WHERE
       (externalids.MAG is not null) and NOT
-        (publication_type IN ("Dataset", "LettersAndComments", "ClinicalTrial", "Review"))
+        (publication_type IN ("Dataset", "Editorial", "LettersAndComments", "News", "Review"))
   ),
   pairs AS ( (
     SELECT

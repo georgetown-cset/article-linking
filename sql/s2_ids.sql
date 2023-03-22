@@ -4,4 +4,4 @@ SELECT
 FROM
   semantic_scholar.papers
 CROSS JOIN unnest(publicationtypes) as publication_type
-WHERE NOT (publication_type IN ("Dataset", "LettersAndComments", "ClinicalTrial", "Review"))
+WHERE NOT (publication_type IN ("Dataset", "Editorial", "LettersAndComments", "News", "Review"))
