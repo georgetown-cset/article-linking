@@ -72,3 +72,4 @@ from
 inner join
   mapped_references
 using(id)
+where array_length(split(meta.references, ",")) = array_length(split(mapped_references.references, ","))
