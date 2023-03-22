@@ -89,7 +89,7 @@ class Scrub(beam.DoFn):
                 clean_record[field+"_norm"] = delimiter.join(cleaned) if cleaned else None
             else:
                 raise ValueError(field+" is not supported by clean_corpus")
-        yield clean_record
+        yield json.dumps(clean_record)
 
 
 def run_pipeline(input_dir: str, output_dir: str, fields_to_clean: list, pipeline_args: list) -> None:
