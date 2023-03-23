@@ -229,7 +229,7 @@ with DAG("article_linkage_updater_v3_2way_match",
     merge_combine_query_list = [t.strip() for t in open(f"{dags_dir}/sequences/"
                   f"{gcs_folder}/merge_combined_metadata.tsv")]
     last_combination_query = wait_for_combine
-    meta_match_queries = "\nunion all\n".join([f"select id1, id2 from {staging_dataset}.{table}\nunion all\nselect id2 as id1, id1 as id2 from {staging_dataset}.{table}" for table in combine_tables])
+    meta_match_queries = "\nunion all\n".join([f"select all1_id, all2_id from {staging_dataset}.{table}\nunion all\nselect all2_id as all1_id, all1_id as all2_id from {staging_dataset}.{table}" for table in combine_tables])
     for query_name in merge_combine_query_list:
         next = BigQueryInsertJobOperator(
             task_id=query_name,
