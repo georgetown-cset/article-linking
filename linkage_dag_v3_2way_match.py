@@ -204,7 +204,7 @@ with DAG("article_linkage_updater_v3_2way_match",
                 task_id=table_name,
                 configuration={
                     "query": {
-                        "query": "{% include '" + f"{sql_dir}/strong_match_template.sql" + "' %}",
+                        "query": "{% include '" + f"{sql_dir}/match_template.sql" + "' %}",
                         "useLegacySql": False,
                         "destinationTable": {
                             "projectId": project_id,
@@ -216,7 +216,11 @@ with DAG("article_linkage_updater_v3_2way_match",
                         "writeDisposition": "WRITE_TRUNCATE"
                     }
                 },
-                params={"strong": strong, "other": other}
+                params={
+                    "strong": strong,
+                    "other": other,
+                    "additional_checks": "" if other == "year" else f'and (a.{other} != "")'
+                }
             ))
 
     wait_for_combine = DummyOperator(task_id="wait_for_combine")
