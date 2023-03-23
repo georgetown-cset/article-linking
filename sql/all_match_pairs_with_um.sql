@@ -90,7 +90,7 @@ WITH oa_matches AS (
       SELECT
         all1_id
       FROM
-        {{staging_dataset}}.metadata_self_triple_match)
+        {{staging_dataset}}.metadata_match)
       AND id NOT IN (
       SELECT
         id1
@@ -115,7 +115,7 @@ WITH oa_matches AS (
         all1_id AS id1,
         all2_id AS id2
       FROM
-        {{staging_dataset}}.metadata_self_triple_match)
+        {{staging_dataset}}.metadata_match)
     UNION ALL
     SELECT
       id1,
@@ -128,12 +128,6 @@ WITH oa_matches AS (
       id2
     FROM
       s2_matches 
-    UNION ALL
-    SELECT
-      id1,
-      id2
-    FROM
-      ds_arxiv_matches
     UNION ALL
     SELECT
       id1,
