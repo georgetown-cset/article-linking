@@ -200,6 +200,11 @@ with DAG("article_linkage_updater_v3_2way_match",
                 continue
             table_name = f"{strong}_{other}"
             combine_tables.append(table_name)
+            additional_checks = ""
+            if other != "year":
+                additional_checks += f' and (a.{other} != "")'
+            if "strong" == "references":
+                additional_checks += f' and length(split(references, ",")) > 2'
             combine_queries.append(BigQueryInsertJobOperator(
                 task_id=table_name,
                 configuration={
