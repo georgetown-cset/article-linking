@@ -19,7 +19,7 @@ within or across datasets that shared at least three of the following (non-null)
 to correspond to one article in the merged dataset. We add to this set "near matches" of the concatenation 
 of the normalized title and abstract within a publication year, which we identify using simhash.
 
-To do this, we run the `linkage_dag.py` on airflow. The article linkage runs weekly, triggered by the MAG dag.
+To do this, we run the `linkage_dag.py` on airflow. The article linkage runs weekly, triggered by the `scholarly_lit_trigger` dag.
 
 For an English description of what the dag does, see [the documentation](methods_documentation/overview.md).
 

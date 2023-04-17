@@ -32,7 +32,7 @@ with DAG("scholarly_lit_trigger",
         trigger_dag_id="article_linkage_updater"
     )
 
-    for prerequisite_dag in ["digital_science_tables_updater", "clarivate_tables_updater"]:
+    for prerequisite_dag in ["clarivate_tables_updater"]:
         trigger = TriggerDagRunOperator(
             task_id="trigger_"+prerequisite_dag,
             trigger_dag_id=prerequisite_dag,
