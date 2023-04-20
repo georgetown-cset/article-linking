@@ -1,4 +1,4 @@
-gsutil cp linkage_dag_v3.py gs://us-east1-production2023-cc1-01d75926-bucket/dags/
+gsutil cp linkage_dag.py gs://us-east1-production2023-cc1-01d75926-bucket/dags/
 gsutil cp scholarly_lit_trigger.py gs://us-east1-production2023-cc1-01d75926-bucket/dags/
 gsutil -m cp sql/* gs://us-east1-production2023-cc1-01d75926-bucket/dags/sql/article_linkage/
 gsutil -m cp sequences/* gs://us-east1-production2023-cc1-01d75926-bucket/dags/sequences/article_linkage/
