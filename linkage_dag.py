@@ -20,8 +20,8 @@ from dataloader.airflow_utils.defaults import DATA_BUCKET, PROJECT_ID, GCP_ZONE,
     DAGS_DIR, get_default_args, get_post_success
 
 
-production_dataset = "gcp_cset_links_v2"
 staging_dataset = "staging_gcp_cset_links"
+production_dataset = "gcp_cset_links_v2"
 
 with DAG("article_linkage_updater",
             default_args=get_default_args(),
