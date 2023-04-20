@@ -20,17 +20,17 @@ from dataloader.airflow_utils.defaults import DATA_BUCKET, PROJECT_ID, GCP_ZONE,
     DAGS_DIR, get_default_args, get_post_success
 
 
-production_dataset = "gcp_cset_links_v3"
+production_dataset = "gcp_cset_links_v3_2way_match"
 staging_dataset = f"staging_{production_dataset}"
 
-with DAG("article_linkage_updater",
+with DAG("article_linkage_updater_v3_2way_match",
             default_args=get_default_args(),
             description="Links articles across our scholarly lit holdings.",
             schedule_interval=None,
             user_defined_macros = {"staging_dataset": staging_dataset, "production_dataset": production_dataset}
          ) as dag:
     bucket = DATA_BUCKET
-    gcs_folder = "article_linkage_v3"
+    gcs_folder = "article_linkage_v3_2way_match"
     tmp_dir = f"{gcs_folder}/tmp"
     raw_data_dir = f"{gcs_folder}/data"
     schema_dir = f"{gcs_folder}/schemas"
@@ -38,7 +38,7 @@ with DAG("article_linkage_updater",
     backup_dataset = production_dataset+"_backups"
     project_id = PROJECT_ID
     gce_zone = "us-east1-b"
-    gce_resource_id = "godzilla-of-article-linkage-v3"
+    gce_resource_id = "godzilla-of-article-linkage-v3-2way-match"
     dags_dir = os.environ.get("DAGS_FOLDER")
 
     # We keep several intermediate outputs in a tmp dir on gcs, so clean it out at the start of each run. We clean at
@@ -144,10 +144,10 @@ with DAG("article_linkage_updater",
         "region": "us-east1",
         "temp_location": f"gs://{bucket}/{tmp_dir}/clean_dataflow",
         "save_main_session": True,
-        "requirements_file": f"{dags_dir}/requirements/article_linkage_v3_text_clean_requirements.txt"
+        "requirements_file": f"{dags_dir}/requirements/article_linkage_v3_2way_match_text_clean_requirements.txt"
     }
     clean_corpus = DataflowCreatePythonJobOperator(
-        py_file=f"{dags_dir}/linkage_scripts_v3/clean_corpus.py",
+        py_file=f"{dags_dir}/linkage_scripts_v3_2way_match/clean_corpus.py",
         job_name="article_linkage_clean_corpus",
         task_id="clean_corpus",
         dataflow_default_options=dataflow_options,
@@ -188,37 +188,44 @@ with DAG("article_linkage_updater",
         },
     )
 
-    # It's now time to create the match pairs that can be found using combinations of three exact (modulo normalization)
-    # metadata matches. We can do the individual combinations of triples of matches in parallel, but then need to
-    # aggregate in series
-    combine_commands = []
-    combine_query_list = [t.strip() for t in open(f"{DAGS_DIR}/sequences/"
-                  f"{gcs_folder}/combine_metadata.tsv")]
-    for query_name in combine_query_list:
-        combine_commands.append(BigQueryInsertJobOperator(
-            task_id=query_name,
-            configuration={
-                "query": {
-                    "query": "{% include '" + f"{sql_dir}/{query_name}.sql" + "' %}",
-                    "useLegacySql": False,
-                    "destinationTable": {
-                        "projectId": project_id,
-                        "datasetId": staging_dataset,
-                        "tableId": query_name
-                    },
-                    "allowLargeResults": True,
-                    "createDisposition": "CREATE_IF_NEEDED",
-                    "writeDisposition": "WRITE_TRUNCATE"
-                }
-            },
-        ))
+    # It's now time to create the match pairs that can be found using combinations of one "strong" indicator
+    # and one other indicator
+    strong_indicators = ["title_norm", "abstract_norm", "clean_doi", "references"]
+    weak_indicators = ["year", "last_names_norm"]
+    combine_queries = []
+    combine_tables = []
+    for strong in strong_indicators:
+        for other in strong_indicators+weak_indicators:
+            if strong == other:
+                continue
+            table_name = f"{strong}_{other}"
+            combine_tables.append(table_name)
+            combine_queries.append(BigQueryInsertJobOperator(
+                task_id=table_name,
+                configuration={
+                    "query": {
+                        "query": "{% include '" + f"{sql_dir}/strong_match_template.sql" + "' %}",
+                        "useLegacySql": False,
+                        "destinationTable": {
+                            "projectId": project_id,
+                            "datasetId": staging_dataset,
+                            "tableId": table_name
+                        },
+                        "allowLargeResults": True,
+                        "createDisposition": "CREATE_IF_NEEDED",
+                        "writeDisposition": "WRITE_TRUNCATE"
+                    }
+                },
+                params={"strong": strong, "other": other}
+            ))
 
     wait_for_combine = DummyOperator(task_id="wait_for_combine")
 
-    merge_combine_commands = []
-    merge_combine_query_list = [t.strip() for t in open(f"{DAGS_DIR}/sequences/"
+    merge_combine_queries = []
+    merge_combine_query_list = [t.strip() for t in open(f"{dags_dir}/sequences/"
                   f"{gcs_folder}/merge_combined_metadata.tsv")]
     last_combination_query = wait_for_combine
+    meta_match_queries = "\nunion all\n".join([f"select id1, id2 from {staging_dataset}.{table}\nunion all\nselect id2 as id1, id1 as id2 from {staging_dataset}.{table}" for table in combine_tables])
     for query_name in merge_combine_query_list:
         next = BigQueryInsertJobOperator(
             task_id=query_name,
@@ -236,6 +243,7 @@ with DAG("article_linkage_updater",
                     "writeDisposition": "WRITE_TRUNCATE"
                 }
             },
+            params={"tables": meta_match_queries}
         )
         last_combination_query >> next
         last_combination_query = next
@@ -319,10 +327,10 @@ with DAG("article_linkage_updater",
         "region": "us-east1",
         "temp_location": f"gs://{bucket}/{tmp_dir}/run_lid",
         "save_main_session": True,
-        "requirements_file": f"{dags_dir}/requirements/article_linkage_v3_lid_dataflow_requirements.txt"
+        "requirements_file": f"{dags_dir}/requirements/article_linkage_v3_2way_match_lid_dataflow_requirements.txt"
     }
     run_lid = DataflowCreatePythonJobOperator(
-        py_file=f"{dags_dir}/linkage_scripts_v3/run_lid.py",
+        py_file=f"{dags_dir}/linkage_scripts_v3_2way_match/run_lid.py",
         job_name="article_linkage_lid",
         task_id="run_lid",
         dataflow_default_options=lid_dataflow_options,
@@ -522,7 +530,7 @@ with DAG("article_linkage_updater",
     # task structure
     clear_tmp_dir >> metadata_sequences_start
     (metadata_sequences_end >> union_ids >> check_unique_input_ids >> union_metadata >> export_metadata >>
-        clean_corpus >> import_clean_metadata >> filter_norm_metadata >> combine_commands >> wait_for_combine)
+        clean_corpus >> import_clean_metadata >> filter_norm_metadata >> combine_queries >> wait_for_combine)
 
     (last_combination_query >> heavy_compute_inputs >> gce_instance_start >> [create_cset_ids, run_lid] >>
         gce_instance_stop >> [import_id_mapping, import_lid] >> start_final_transform_queries)

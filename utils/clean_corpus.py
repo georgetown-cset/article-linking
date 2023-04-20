@@ -67,7 +67,7 @@ class Scrub(beam.DoFn):
         :param doi: doi string
         :return: cleaned doi string
         """
-        return doi.lower()
+        return doi.lower().strip()
 
     def process(self, record_str) -> Iterable:
         """
@@ -81,11 +81,12 @@ class Scrub(beam.DoFn):
             if field not in js:
                 continue
             if field.lower() == "doi":
-                clean_record[field] = self.clean_doi(js["doi"])
+                cleaned_doi = self.clean_doi(js["doi"])
+                clean_record[field] = cleaned_doi if cleaned_doi else None
             elif field in ["title", "abstract", "last_name", "last_names"]:
                 cleaned = self.clean_text_data(js[field], field)
                 delimiter = "" if field in ["title", "abstract"] else " "
-                clean_record[field+"_norm"] = delimiter.join(cleaned)
+                clean_record[field+"_norm"] = delimiter.join(cleaned) if cleaned else None
             else:
                 raise ValueError(field+" is not supported by clean_corpus")
         yield clean_record
