@@ -203,8 +203,8 @@ with DAG("article_linkage_updater_v3_2way_match",
             additional_checks = ""
             if other != "year":
                 additional_checks += f' and (a.{other} != "")'
-            if "strong" == "references":
-                additional_checks += f' and length(split(references, ",")) > 2'
+            if "references" in [strong, other]:
+                additional_checks += f' and array_length(split(a.references, ",")) > 2'
             combine_queries.append(BigQueryInsertJobOperator(
                 task_id=table_name,
                 configuration={
@@ -224,7 +224,7 @@ with DAG("article_linkage_updater_v3_2way_match",
                 params={
                     "strong": strong,
                     "other": other,
-                    "additional_checks": "" if other == "year" else f'and (a.{other} != "")'
+                    "additional_checks": additional_checks
                 }
             ))
 
