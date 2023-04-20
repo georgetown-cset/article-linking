@@ -21,7 +21,7 @@ from dataloader.airflow_utils.defaults import DATA_BUCKET, PROJECT_ID, GCP_ZONE,
 
 
 production_dataset = "gcp_cset_links_v2"
-staging_dataset = f"staging_{production_dataset}"
+staging_dataset = f"staging_gcp_cset_links"
 
 with DAG("article_linkage_updater",
             default_args=get_default_args(),
@@ -244,7 +244,7 @@ with DAG("article_linkage_updater",
     heavy_compute_inputs = [
         BigQueryToGCSOperator(
             task_id="export_old_cset_ids",
-            source_project_dataset_table=f"{staging_dataset}.article_links",
+            source_project_dataset_table=f"{production_dataset}.article_links",
             destination_cloud_storage_uris=f"gs://{bucket}/{tmp_dir}/prev_id_mapping/prev_id_mapping*.jsonl",
             export_format="NEWLINE_DELIMITED_JSON"
         ),
@@ -336,7 +336,6 @@ with DAG("article_linkage_updater",
 
     # turn off the expensive godzilla of article linkage when we're done with it, then import the id mappings and
     # lid back into BQ
-
     gce_instance_stop = ComputeEngineStopInstanceOperator(
         project_id=project_id,
         zone=gce_zone,
