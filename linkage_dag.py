@@ -20,25 +20,25 @@ from dataloader.airflow_utils.defaults import DATA_BUCKET, PROJECT_ID, GCP_ZONE,
     DAGS_DIR, get_default_args, get_post_success
 
 
-production_dataset = "gcp_cset_links_v3"
+production_dataset = "gcp_cset_links_v2"
 staging_dataset = f"staging_{production_dataset}"
 
-with DAG("article_linkage_updater_v3",
+with DAG("article_linkage_updater",
             default_args=get_default_args(),
             description="Links articles across our scholarly lit holdings.",
             schedule_interval=None,
             user_defined_macros = {"staging_dataset": staging_dataset, "production_dataset": production_dataset}
          ) as dag:
     bucket = DATA_BUCKET
-    gcs_folder = "article_linkage_v3"
+    gcs_folder = "article_linkage"
     tmp_dir = f"{gcs_folder}/tmp"
     raw_data_dir = f"{gcs_folder}/data"
     schema_dir = f"{gcs_folder}/schemas"
     sql_dir = f"sql/{gcs_folder}"
     backup_dataset = production_dataset+"_backups"
     project_id = PROJECT_ID
-    gce_zone = "us-east1-b"
-    gce_resource_id = "godzilla-of-article-linkage-v3"
+    gce_zone = GCP_ZONE
+    gce_resource_id = "godzilla-of-article-linkage"
     dags_dir = os.environ.get("DAGS_FOLDER")
 
     # We keep several intermediate outputs in a tmp dir on gcs, so clean it out at the start of each run. We clean at
@@ -144,10 +144,10 @@ with DAG("article_linkage_updater_v3",
         "region": "us-east1",
         "temp_location": f"gs://{bucket}/{tmp_dir}/clean_dataflow",
         "save_main_session": True,
-        "requirements_file": f"{DAGS_DIR}/requirements/article_linkage_v3_text_clean_requirements.txt"
+        "requirements_file": f"{dags_dir}/requirements/article_linkage_text_clean_requirements.txt"
     }
     clean_corpus = DataflowCreatePythonJobOperator(
-        py_file=f"{DAGS_DIR}/linkage_scripts_v3/clean_corpus.py",
+        py_file=f"{dags_dir}/linkage_scripts/clean_corpus.py",
         job_name="article_linkage_clean_corpus",
         task_id="clean_corpus",
         dataflow_default_options=dataflow_options,
@@ -244,7 +244,7 @@ with DAG("article_linkage_updater_v3",
     heavy_compute_inputs = [
         BigQueryToGCSOperator(
             task_id="export_old_cset_ids",
-            source_project_dataset_table=f"gcp_cset_links_v2.article_links",
+            source_project_dataset_table=f"{staging_dataset}.article_links",
             destination_cloud_storage_uris=f"gs://{bucket}/{tmp_dir}/prev_id_mapping/prev_id_mapping*.jsonl",
             export_format="NEWLINE_DELIMITED_JSON"
         ),
@@ -279,9 +279,9 @@ with DAG("article_linkage_updater_v3",
 
     vm_script_sequence = [
         "cd /mnt/disks/data",
-        "rm -rf run_v3",
-        "mkdir run_v3",
-        "cd run_v3",
+        "rm -rf run",
+        "mkdir run",
+        "cd run",
         f"/snap/bin/gsutil cp gs://{bucket}/{gcs_folder}/vm_scripts/* .",
         "rm -rf input_data",
         "rm -rf current_ids",
@@ -319,10 +319,10 @@ with DAG("article_linkage_updater_v3",
         "region": "us-east1",
         "temp_location": f"gs://{bucket}/{tmp_dir}/run_lid",
         "save_main_session": True,
-        "requirements_file": f"{DAGS_DIR}/requirements/article_linkage_v3_lid_dataflow_requirements.txt"
+        "requirements_file": f"{dags_dir}/requirements/article_linkage_lid_dataflow_requirements.txt"
     }
     run_lid = DataflowCreatePythonJobOperator(
-        py_file=f"{DAGS_DIR}/linkage_scripts_v3/run_lid.py",
+        py_file=f"{dags_dir}/linkage_scripts/run_lid.py",
         job_name="article_linkage_lid",
         task_id="run_lid",
         dataflow_default_options=lid_dataflow_options,
@@ -337,7 +337,6 @@ with DAG("article_linkage_updater_v3",
     # turn off the expensive godzilla of article linkage when we're done with it, then import the id mappings and
     # lid back into BQ
 
-    # commenting this out until gcp approves my request to increase our M1 CPU quota...
     gce_instance_stop = ComputeEngineStopInstanceOperator(
         project_id=project_id,
         zone=gce_zone,
@@ -515,11 +514,11 @@ with DAG("article_linkage_updater_v3",
         )
         wait_for_snapshots >> pop_descriptions >> success_alert
 
-#    downstream_tasks = [
-#        TriggerDagRunOperator(task_id="trigger_article_classification", trigger_dag_id="article_classification"),
-#        TriggerDagRunOperator(task_id="trigger_fields_of_study", trigger_dag_id="fields_of_study"),
-#        TriggerDagRunOperator(task_id="trigger_new_fields_of_study", trigger_dag_id="new_fields_of_study"),
-#    ]
+    downstream_tasks = [
+        TriggerDagRunOperator(task_id="trigger_article_classification", trigger_dag_id="article_classification"),
+        TriggerDagRunOperator(task_id="trigger_fields_of_study", trigger_dag_id="fields_of_study"),
+        TriggerDagRunOperator(task_id="trigger_new_fields_of_study", trigger_dag_id="new_fields_of_study"),
+    ]
 
     # task structure
     clear_tmp_dir >> metadata_sequences_start
@@ -532,4 +531,4 @@ with DAG("article_linkage_updater_v3",
     (last_transform_query >> check_queries >> start_production_cp >> push_to_production >> wait_for_production_copy >>
         snapshots >> wait_for_snapshots)
 
-#    success_alert >> downstream_tasks
+    success_alert >> downstream_tasks
