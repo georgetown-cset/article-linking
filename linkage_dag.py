@@ -229,7 +229,6 @@ with DAG("article_linkage_updater",
 
     wait_for_combine = DummyOperator(task_id="wait_for_combine")
 
-    merge_combine_queries = []
     merge_combine_query_list = [t.strip() for t in open(f"{DAGS_DIR}/sequences/"
                   f"{gcs_folder}/merge_combined_metadata.tsv")]
     last_combination_query = wait_for_combine
