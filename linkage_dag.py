@@ -20,8 +20,8 @@ from dataloader.airflow_utils.defaults import DATA_BUCKET, PROJECT_ID, GCP_ZONE,
     DAGS_DIR, get_default_args, get_post_success
 
 
-production_dataset = "gcp_cset_links_v2"
 staging_dataset = "staging_gcp_cset_links"
+production_dataset = "gcp_cset_links_v2"
 
 with DAG("article_linkage_updater",
             default_args=get_default_args(),
@@ -496,7 +496,7 @@ with DAG("article_linkage_updater",
 
     wait_for_snapshots = DummyOperator(task_id="wait_for_snapshots")
 
-    success_alert = get_post_success("Article linkage v3 update succeeded!", dag)
+    success_alert = get_post_success("Article linkage update succeeded!", dag)
 
     with open(f"{os.environ.get('DAGS_FOLDER')}/schemas/{gcs_folder}/table_descriptions.json") as f:
         table_desc = json.loads(f.read())
