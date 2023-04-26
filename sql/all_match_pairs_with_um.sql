@@ -40,23 +40,6 @@ WITH oa_matches AS (
       (externalids.MAG is not null) and NOT
         (publication_type IN ("Dataset", "Editorial", "LettersAndComments", "News", "Review"))
   ),
-  ds_arxiv_matches AS (
-    SELECT
-      id as id1,
-      replace(arxiv_id, "arXiv:", "") as id2
-    FROM
-      gcp_cset_digital_science.dimensions_publications_latest
-    WHERE
-      (arxiv_id is not null)
-    UNION ALL
-    SELECT
-      replace(arxiv_id, "arXiv:", "") as id1,
-      id as id2
-    FROM
-      gcp_cset_digital_science.dimensions_publications_latest
-    WHERE
-      (arxiv_id is not null)
-  ),
   raw_oa_arxiv_matches AS (
     SELECT
       id as oa_id,
@@ -100,11 +83,7 @@ WITH oa_matches AS (
         id1
       FROM
         s2_matches
-      ) AND id NOT IN (
-      SELECT
-        id1
-      FROM
-        ds_arxiv_matches)
+      )
       AND id NOT IN (
       SELECT
         id1
