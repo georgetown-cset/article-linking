@@ -20,17 +20,17 @@ from dataloader.airflow_utils.defaults import DATA_BUCKET, PROJECT_ID, GCP_ZONE,
     DAGS_DIR, get_default_args, get_post_success
 
 
-production_dataset = "gcp_cset_links_v3_2way_match"
+production_dataset = "gcp_cset_links_v3"
 staging_dataset = f"staging_{production_dataset}"
 
-with DAG("article_linkage_updater_v3_2way_match",
+with DAG("article_linkage_updater",
             default_args=get_default_args(),
             description="Links articles across our scholarly lit holdings.",
             schedule_interval=None,
             user_defined_macros = {"staging_dataset": staging_dataset, "production_dataset": production_dataset}
          ) as dag:
     bucket = DATA_BUCKET
-    gcs_folder = "article_linkage_v3_2way_match"
+    gcs_folder = "article_linkage"
     tmp_dir = f"{gcs_folder}/tmp"
     raw_data_dir = f"{gcs_folder}/data"
     schema_dir = f"{gcs_folder}/schemas"
@@ -38,8 +38,7 @@ with DAG("article_linkage_updater_v3_2way_match",
     backup_dataset = production_dataset+"_backups"
     project_id = PROJECT_ID
     gce_zone = GCP_ZONE
-    gce_resource_id = "godzilla-of-article-linkage-v3"
-    dags_dir = os.environ.get("DAGS_FOLDER")
+    gce_resource_id = "godzilla-of-article-linkage"
 
     # We keep several intermediate outputs in a tmp dir on gcs, so clean it out at the start of each run. We clean at
     # the start of the run so if the run fails we can examine the failed data
@@ -144,7 +143,7 @@ with DAG("article_linkage_updater_v3_2way_match",
         "region": "us-east1",
         "temp_location": f"gs://{bucket}/{tmp_dir}/clean_dataflow",
         "save_main_session": True,
-        "requirements_file": f"{dags_dir}/requirements/article_linkage_v3_2way_match_text_clean_requirements.txt"
+        "requirements_file": f"{DAGS_DIR}/requirements/article_linkage_v3_2way_match_text_clean_requirements.txt"
     }
     clean_corpus = DataflowCreatePythonJobOperator(
         py_file=f"{dags_dir}/linkage_scripts_v3_2way_match/clean_corpus.py",
@@ -335,7 +334,7 @@ with DAG("article_linkage_updater_v3_2way_match",
         "region": "us-east1",
         "temp_location": f"gs://{bucket}/{tmp_dir}/run_lid",
         "save_main_session": True,
-        "requirements_file": f"{dags_dir}/requirements/article_linkage_v3_2way_match_lid_dataflow_requirements.txt"
+        "requirements_file": f"{DAGS_DIR}/requirements/article_linkage_v3_2way_match_lid_dataflow_requirements.txt"
     }
     run_lid = DataflowCreatePythonJobOperator(
         py_file=f"{dags_dir}/linkage_scripts_v3_2way_match/run_lid.py",
