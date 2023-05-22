@@ -441,7 +441,7 @@ with DAG("article_linkage_updater",
             select
               count(concat(all1_id, " ", all2_id)) = 0
             from
-              {staging_dataset}.metadata_self_triple_match
+              {staging_dataset}.metadata_match
             where concat(all1_id, " ", all2_id) not in (
               select
                 concat(links1.orig_id, " ", links2.orig_id)
