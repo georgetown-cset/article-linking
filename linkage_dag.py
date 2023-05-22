@@ -146,7 +146,7 @@ with DAG("article_linkage_updater",
         "requirements_file": f"{DAGS_DIR}/requirements/article_linkage_text_clean_requirements.txt"
     }
     clean_corpus = DataflowCreatePythonJobOperator(
-        py_file=f"{dags_dir}/linkage_scripts_v3_2way_match/clean_corpus.py",
+        py_file=f"{dags_dir}/linkage_scripts/clean_corpus.py",
         job_name="article_linkage_clean_corpus",
         task_id="clean_corpus",
         dataflow_default_options=dataflow_options,
@@ -337,7 +337,7 @@ with DAG("article_linkage_updater",
         "requirements_file": f"{DAGS_DIR}/requirements/article_linkage_lid_dataflow_requirements.txt"
     }
     run_lid = DataflowCreatePythonJobOperator(
-        py_file=f"{dags_dir}/linkage_scripts_v3_2way_match/run_lid.py",
+        py_file=f"{dags_dir}/linkage_scripts/run_lid.py",
         job_name="article_linkage_lid",
         task_id="run_lid",
         dataflow_default_options=lid_dataflow_options,
