@@ -52,7 +52,7 @@ with DAG("article_linkage_updater",
     # standard format
     metadata_sequences_start = []
     metadata_sequences_end = []
-    for dataset in ["arxiv", "cnki", "ds", "mag", "wos", "papers_with_code", "openalex"]:
+    for dataset in ["arxiv", "cnki", "wos", "papers_with_code", "openalex", "s2"]:
         ds_commands = []
         query_list = [t.strip() for t in open(f"{DAGS_DIR}/sequences/"
                                                            f"{gcs_folder}/generate_{dataset}_metadata.tsv")]
@@ -187,37 +187,52 @@ with DAG("article_linkage_updater",
         },
     )
 
-    # It's now time to create the match pairs that can be found using combinations of three exact (modulo normalization)
-    # metadata matches. We can do the individual combinations of triples of matches in parallel, but then need to
-    # aggregate in series
-    combine_commands = []
-    combine_query_list = [t.strip() for t in open(f"{DAGS_DIR}/sequences/"
-                  f"{gcs_folder}/combine_metadata.tsv")]
-    for query_name in combine_query_list:
-        combine_commands.append(BigQueryInsertJobOperator(
-            task_id=query_name,
-            configuration={
-                "query": {
-                    "query": "{% include '" + f"{sql_dir}/{query_name}.sql" + "' %}",
-                    "useLegacySql": False,
-                    "destinationTable": {
-                        "projectId": project_id,
-                        "datasetId": staging_dataset,
-                        "tableId": query_name
-                    },
-                    "allowLargeResults": True,
-                    "createDisposition": "CREATE_IF_NEEDED",
-                    "writeDisposition": "WRITE_TRUNCATE"
+    # It's now time to create the match pairs that can be found using combinations of one "strong" indicator
+    # and one other indicator
+    strong_indicators = ["title_norm", "abstract_norm", "clean_doi", "references"]
+    weak_indicators = ["year", "last_names_norm"]
+    combine_queries = []
+    combine_tables = []
+    for strong in strong_indicators:
+        for other in strong_indicators+weak_indicators:
+            if strong == other:
+                continue
+            table_name = f"{strong}_{other}"
+            combine_tables.append(table_name)
+            additional_checks = ""
+            if other != "year":
+                additional_checks += f' and (a.{other} != "")'
+            if "references" in [strong, other]:
+                additional_checks += f' and array_length(split(a.references, ",")) > 2'
+            combine_queries.append(BigQueryInsertJobOperator(
+                task_id=table_name,
+                configuration={
+                    "query": {
+                        "query": "{% include '" + f"{sql_dir}/match_template.sql" + "' %}",
+                        "useLegacySql": False,
+                        "destinationTable": {
+                            "projectId": project_id,
+                            "datasetId": staging_dataset,
+                            "tableId": table_name
+                        },
+                        "allowLargeResults": True,
+                        "createDisposition": "CREATE_IF_NEEDED",
+                        "writeDisposition": "WRITE_TRUNCATE"
+                    }
+                },
+                params={
+                    "strong": strong,
+                    "other": other,
+                    "additional_checks": additional_checks
                 }
-            },
-        ))
+            ))
 
     wait_for_combine = DummyOperator(task_id="wait_for_combine")
 
-    merge_combine_commands = []
     merge_combine_query_list = [t.strip() for t in open(f"{DAGS_DIR}/sequences/"
                   f"{gcs_folder}/merge_combined_metadata.tsv")]
     last_combination_query = wait_for_combine
+    meta_match_queries = "\nunion all\n".join([f"select all1_id, all2_id from {staging_dataset}.{table}\nunion all\nselect all2_id as all1_id, all1_id as all2_id from {staging_dataset}.{table}" for table in combine_tables])
     for query_name in merge_combine_query_list:
         next = BigQueryInsertJobOperator(
             task_id=query_name,
@@ -235,6 +250,7 @@ with DAG("article_linkage_updater",
                     "writeDisposition": "WRITE_TRUNCATE"
                 }
             },
+            params={"tables": meta_match_queries}
         )
         last_combination_query >> next
         last_combination_query = next
@@ -521,7 +537,7 @@ with DAG("article_linkage_updater",
     # task structure
     clear_tmp_dir >> metadata_sequences_start
     (metadata_sequences_end >> union_ids >> check_unique_input_ids >> union_metadata >> export_metadata >>
-        clean_corpus >> import_clean_metadata >> filter_norm_metadata >> combine_commands >> wait_for_combine)
+        clean_corpus >> import_clean_metadata >> filter_norm_metadata >> combine_queries >> wait_for_combine)
 
     (last_combination_query >> heavy_compute_inputs >> gce_instance_start >> [create_cset_ids, run_lid] >>
         gce_instance_stop >> [import_id_mapping, import_lid] >> start_final_transform_queries)
