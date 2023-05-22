@@ -143,7 +143,7 @@ with DAG("article_linkage_updater",
         "region": "us-east1",
         "temp_location": f"gs://{bucket}/{tmp_dir}/clean_dataflow",
         "save_main_session": True,
-        "requirements_file": f"{DAGS_DIR}/requirements/article_linkage_v3_2way_match_text_clean_requirements.txt"
+        "requirements_file": f"{DAGS_DIR}/requirements/article_linkage_text_clean_requirements.txt"
     }
     clean_corpus = DataflowCreatePythonJobOperator(
         py_file=f"{dags_dir}/linkage_scripts_v3_2way_match/clean_corpus.py",
@@ -334,7 +334,7 @@ with DAG("article_linkage_updater",
         "region": "us-east1",
         "temp_location": f"gs://{bucket}/{tmp_dir}/run_lid",
         "save_main_session": True,
-        "requirements_file": f"{DAGS_DIR}/requirements/article_linkage_v3_2way_match_lid_dataflow_requirements.txt"
+        "requirements_file": f"{DAGS_DIR}/requirements/article_linkage_lid_dataflow_requirements.txt"
     }
     run_lid = DataflowCreatePythonJobOperator(
         py_file=f"{dags_dir}/linkage_scripts_v3_2way_match/run_lid.py",
