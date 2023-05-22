@@ -40,23 +40,6 @@ WITH oa_matches AS (
       (externalids.MAG is not null) and NOT
         (publication_type IN ("Dataset", "Editorial", "LettersAndComments", "News", "Review"))
   ),
-  ds_arxiv_matches AS (
-    SELECT
-      id as id1,
-      replace(arxiv_id, "arXiv:", "") as id2
-    FROM
-      gcp_cset_digital_science.dimensions_publications_latest
-    WHERE
-      (arxiv_id is not null)
-    UNION ALL
-    SELECT
-      replace(arxiv_id, "arXiv:", "") as id1,
-      id as id2
-    FROM
-      gcp_cset_digital_science.dimensions_publications_latest
-    WHERE
-      (arxiv_id is not null)
-  ),
   raw_oa_arxiv_matches AS (
     SELECT
       id as oa_id,
@@ -84,13 +67,13 @@ WITH oa_matches AS (
       id AS id1,
       id AS id2
     FROM
-      {{staging_dataset}}.all_metadata_norm
+      {{staging_dataset}}.all_metadata_norm_filt
     WHERE
       id NOT IN (
       SELECT
         all1_id
       FROM
-        {{staging_dataset}}.metadata_self_triple_match)
+        {{staging_dataset}}.metadata_match)
       AND id NOT IN (
       SELECT
         id1
@@ -100,11 +83,7 @@ WITH oa_matches AS (
         id1
       FROM
         s2_matches
-      ) AND id NOT IN (
-      SELECT
-        id1
-      FROM
-        ds_arxiv_matches)
+      )
       AND id NOT IN (
       SELECT
         id1
@@ -115,7 +94,7 @@ WITH oa_matches AS (
         all1_id AS id1,
         all2_id AS id2
       FROM
-        {{staging_dataset}}.metadata_self_triple_match)
+        {{staging_dataset}}.metadata_match)
     UNION ALL
     SELECT
       id1,
@@ -128,12 +107,6 @@ WITH oa_matches AS (
       id2
     FROM
       s2_matches 
-    UNION ALL
-    SELECT
-      id1,
-      id2
-    FROM
-      ds_arxiv_matches
     UNION ALL
     SELECT
       id1,
