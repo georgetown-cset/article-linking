@@ -29,6 +29,9 @@ SELECT
   references
 FROM
   semantic_scholar.papers
+INNER JOIN
+  {{ staging_dataset }}.s2_ids
+ON CAST(corpusid AS string) =
 LEFT JOIN
   semantic_scholar.abstracts
 USING(corpusid)
