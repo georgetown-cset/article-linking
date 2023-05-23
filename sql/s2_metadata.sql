@@ -31,7 +31,7 @@ FROM
   semantic_scholar.papers
 INNER JOIN
   {{ staging_dataset }}.s2_ids
-ON CAST(corpusid AS string) =
+ON CAST(corpusid AS string) = id
 LEFT JOIN
   semantic_scholar.abstracts
 USING(corpusid)
