@@ -6,15 +6,19 @@ cross-dataset article linking. Note that we use "article" very loosely, although
 is fairly consistent across corpora. Books, for example, are included.
 
 For each article in arXiv, WOS, Papers With Code, Semantic Scholar, and OpenAlex 
-we normalized titles, abstracts, and author last names, and then considered each group of articles 
-within or across datasets that shared at least three of the following (non-null) metadata fields:
+we normalized titles, abstracts, and author last names. For the purpose of matching, we filtered out
+titles, abstracts, and DOIs that occurred more than 10 times in the corpus. We then considered each group of articles 
+within or across datasets that shared at least one of the following (non-null) metadata fields:
  
 *  Normalized title
 *  Normalized abstract
+*  Citations
+*  DOI
+
+as well as a match on one additional field above, or on
+
 *  Publication year
 *  Normalized author last names
-*  Citations (for within dataset matches)
-*  DOI
  
 to correspond to one article in the merged dataset. We add to this set "near matches" of the concatenation 
 of the normalized title and abstract within a publication year, which we identify using simhash.

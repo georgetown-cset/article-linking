@@ -8,7 +8,8 @@ To do this, we run the SQL queries specified in the `sequences/generate_{dataset
 within our airflow DAG. Mostly this is fairly straightforward, but it's worth noting that for OpenAlex we exclude
 documents with a `type` of Dataset, Peer Review, or Grant. Additionally, we take every combination of the WOS
 titles, abstracts, and pubyear so that a match on any of these combinations will result in a match on
-the shared WOS id.
+the shared WOS id. Finally, for Semantic Scholar, we exclude any documents that have a non-null publication type
+that is one of Dataset, Editorial, LettersAndComments, News, or Review.
 
 Having generated the metadata tables, we now need to normalize the metadata. To do this, we use 
 the [clean_corpus](../utils/clean_corpus.py) script, which applies several text normalizations to the
@@ -18,19 +19,17 @@ Having normalized our data, we now need to do within and cross-dataset matches, 
 containing all pairs of matched articles. To do this, we use the series of queries in 
 `sequences/combine_metadata.tsv`.
 
-All of our metadata fields but one can be used to match articles both within and across datasets. The
-exception is set of references for each article, which can only be used within dataset. We will
-consequently first use this information in our initial within-dataset merge, and then drop it when 
-doing cross-dataset merges.
+For two articles A and B to be considered a match, we require that they have a non-null match on at least one of:
 
-For two articles A and B to be considered a match, we require that at least three of the following be true:
+*  Normalized title
+*  Normalized abstract
+*  Citations
+*  DOI
 
-- A and B have the same (not null or empty) normalized title
-- A and B have the same (not null or empty) normalized abstract
-- A and B have the same (not null or empty) pubyear
-- A and B have the same (not null or empty) normalized author last names
-- A and B have the same (not null or empty) references (if from the same dataset)
-- A and B have the same (not null or empty) DOI
+as well as a match on one additional field above, or on
+
+*  Publication year
+*  Normalized author last names
 
 We then add back in any articles that didn't match anything else, and combine the matches into tables that
 will be passed to LID and to the simhash and article id assignment code.
