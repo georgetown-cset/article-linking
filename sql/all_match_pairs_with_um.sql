@@ -25,6 +25,21 @@ WITH lens_matches AS (
       (id.type = "openalex")
       AND lens_id in (select id from {{ staging_dataset }}.lens_ids)
     )
+    (
+    SELECT
+      lens_id as id1,
+      alias_lens_id as id2
+    FROM `gcp-cset-projects.lens.scholarly`
+    CROSS JOIN UNNEST(alias_lens_ids) as alias_lens_id
+    )
+    UNION ALL
+    (
+    SELECT
+      alias_lens_id as id1,
+      lens_id as id2,
+    FROM `gcp-cset-projects.lens.scholarly`
+    CROSS JOIN UNNEST(alias_lens_ids) as alias_lens_id
+    )
   ),
   raw_oa_arxiv_matches AS (
     SELECT
