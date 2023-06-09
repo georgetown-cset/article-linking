@@ -1,44 +1,30 @@
 -- add "self matches" for the articles that didn't match anything (this can happen if the article has a lot of null
 -- fields) to the rest of the article match pairs
-WITH oa_matches AS (
-  SELECT
-    id AS id1,
-    ids.mag AS id2
-  FROM
-    openalex.works
-  WHERE
-    (ids.mag IS NOT NULL) AND ((type IS NULL)
-        OR NOT (type IN ("dataset", "peer-review", "grant")))
-  UNION ALL
-  SELECT
-    ids.mag AS id1,
-    id AS id2
-  FROM
-    openalex.works
-  WHERE
-    (ids.mag IS NOT NULL) AND ((type IS NULL)
-        OR NOT (type IN ("dataset", "peer-review", "grant")))
-  ),
-  s2_matches AS (
-    SELECT
-      CAST(corpusid AS string) as id1,
-      CAST(externalids.MAG AS string) as id2
+WITH lens_matches AS (
+    (SELECT
+      lens_id as id1,
+      CONCAT("https://openalex.org/", id.value) as id2
     FROM
-      semantic_scholar.papers
-    CROSS JOIN unnest(publicationtypes) as publication_type
+      lens.scholarly
+    CROSS JOIN
+      UNNEST(external_ids) as id
     WHERE
-      (externalids.MAG is not null) and NOT
-        (publication_type IN ("Dataset", "Editorial", "LettersAndComments", "News", "Review"))
+      (id.type = "openalex")
+      AND lens_id in (select id from {{ staging_dataset }}.lens_ids)
+    )
     UNION ALL
+    (
     SELECT
-      CAST(externalids.MAG AS string) as id1,
-      CAST(corpusid AS string) as id2
+      CONCAT("https://openalex.org/", id.value) as id1,
+      lens_id as id2
     FROM
-      semantic_scholar.papers
-    CROSS JOIN unnest(publicationtypes) as publication_type
+      lens.scholarly
+    CROSS JOIN
+      UNNEST(external_ids) as id
     WHERE
-      (externalids.MAG is not null) and NOT
-        (publication_type IN ("Dataset", "Editorial", "LettersAndComments", "News", "Review"))
+      (id.type = "openalex")
+      AND lens_id in (select id from {{ staging_dataset }}.lens_ids)
+    )
   ),
   raw_oa_arxiv_matches AS (
     SELECT
@@ -78,17 +64,12 @@ WITH oa_matches AS (
       SELECT
         id1
       FROM
-        oa_matches) AND id NOT IN (
-      SELECT
-        id1
-      FROM
-        s2_matches
-      )
+        oa_arxiv_matches)
       AND id NOT IN (
       SELECT
         id1
       FROM
-        oa_arxiv_matches))
+        lens_matches))
     UNION ALL (
       SELECT
         all1_id AS id1,
@@ -100,19 +81,13 @@ WITH oa_matches AS (
       id1,
       id2
     FROM
-      oa_matches
-    UNION ALL
-    SELECT
-      id1,
-      id2
-    FROM
-      s2_matches 
-    UNION ALL
-    SELECT
-      id1,
-      id2
-    FROM
       oa_arxiv_matches
+    UNION ALL
+    SELECT
+      id1,
+      id2
+    FROM
+      lens_matches
   )
 SELECT
   DISTINCT id1,
