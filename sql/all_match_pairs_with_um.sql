@@ -25,6 +25,7 @@ WITH lens_matches AS (
       (id.type = "openalex")
       AND lens_id in (select id from {{ staging_dataset }}.lens_ids)
     )
+    UNION ALL
     (
     SELECT
       lens_id as id1,
