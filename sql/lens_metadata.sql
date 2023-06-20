@@ -25,7 +25,7 @@ WITH
   out_citations AS (
   SELECT
     scholarly.lens_id,
-    ARRAY_AGG(reference.lens_id) AS references
+    STRING_AGG(reference.lens_id) AS references
   FROM
     lens.scholarly
   CROSS JOIN
