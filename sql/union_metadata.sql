@@ -19,6 +19,10 @@ with meta as (
   select id, title, abstract, clean_doi, year, last_names,
     references, "s2" as dataset
   from {{staging_dataset}}.s2_metadata
+  UNION ALL
+  select id, title, abstract, clean_doi, year, last_names,
+    references, "lens" as dataset
+  from {{staging_dataset}}.lens_metadata
 ),
 -- add merged id refs
 mapped_references as (
