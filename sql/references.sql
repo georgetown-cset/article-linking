@@ -3,7 +3,7 @@
 -- For each merged_id, we take all its orig_ids' references, and look up the merged_ids of the references.
 -- We exclude references that appear outside our merged corpus.
 SELECT
-  DISTINCT links1.merged_id AS id,
+  DISTINCT links1.merged_id AS merged_id,
   links2.merged_id AS ref_id
 FROM (
   SELECT

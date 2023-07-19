@@ -411,7 +411,7 @@ with DAG("article_linkage_updater",
     # along the way
     check_queries = []
     production_tables = ["all_metadata_with_cld2_lid", "article_links", "article_links_with_dataset",
-                         "article_merged_meta", "mapped_references", "article_links_nested"]
+                         "article_merged_meta", "references", "article_links_nested"]
     for table_name in production_tables:
         check_queries.append(BigQueryCheckOperator(
             task_id="check_monotonic_increase_"+table_name.lower(),
@@ -456,7 +456,7 @@ with DAG("article_linkage_updater",
         ),
         BigQueryCheckOperator(
             task_id="no_null_references",
-            sql=f"select count(0) = 0 from {staging_dataset}.mapped_references where id is null or ref_id is null",
+            sql=f"select count(0) = 0 from {staging_dataset}.references where id is null or ref_id is null",
             use_legacy_sql = False
         ),
     ])
@@ -474,33 +474,11 @@ with DAG("article_linkage_updater",
             write_disposition="WRITE_TRUNCATE"
         ))
 
-    # this query is essentially just copying mapped_references to paper_references_merged, so
-    # putting this in the push_to_production array is not risky
-    push_to_production.append(
-        BigQueryInsertJobOperator(
-            task_id="copy_mapped_references_to_paper_references_merged",
-            configuration={
-                "query": {
-                    "query": f"select id as merged_id, ref_id from {staging_dataset}.mapped_references",
-                    "useLegacySql": False,
-                    "destinationTable": {
-                        "projectId": project_id,
-                        "datasetId": production_dataset,
-                        "tableId": "paper_references_merged"
-                    },
-                    "allowLargeResults": True,
-                    "createDisposition": "CREATE_IF_NEEDED",
-                    "writeDisposition": "WRITE_TRUNCATE"
-                }
-            },
-        )
-    )
-
     wait_for_production_copy = DummyOperator(task_id="wait_for_production_copy")
 
     snapshots = []
     curr_date = datetime.now().strftime("%Y%m%d")
-    for table in ["article_links", "article_links_nested", "paper_references_merged"]:
+    for table in ["article_links", "article_links_nested"]:
         # mk the snapshot predictions table
         snapshots.append(BigQueryToBigQueryOperator(
             task_id=f"snapshot_{table}",
@@ -516,7 +494,7 @@ with DAG("article_linkage_updater",
 
     with open(f"{os.environ.get('DAGS_FOLDER')}/schemas/{gcs_folder}/table_descriptions.json") as f:
         table_desc = json.loads(f.read())
-    for table in production_tables + ["paper_references_merged"]:
+    for table in production_tables:
         pop_descriptions = PythonOperator(
             task_id="populate_column_documentation_for_" + table,
             op_kwargs={
