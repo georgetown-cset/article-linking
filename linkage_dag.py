@@ -20,7 +20,7 @@ from dataloader.airflow_utils.defaults import DATA_BUCKET, PROJECT_ID, GCP_ZONE,
     DAGS_DIR, get_default_args, get_post_success
 
 
-production_dataset = "gcp_cset_links_v3"
+production_dataset = "literature"
 staging_dataset = f"staging_{production_dataset}"
 
 with DAG("article_linkage_updater",
@@ -410,8 +410,7 @@ with DAG("article_linkage_updater",
     # we're about to copy tables from staging to production, so do checks to make sure we haven't broken anything
     # along the way
     check_queries = []
-    production_tables = ["all_metadata_with_cld2_lid", "article_links", "article_links_with_dataset",
-                         "article_merged_meta", "mapped_references", "article_links_nested"]
+    production_tables = ["sources", "references", "all_metadata_with_cld2_lid"]
     for table_name in production_tables:
         check_queries.append(BigQueryCheckOperator(
             task_id="check_monotonic_increase_"+table_name.lower(),
@@ -420,15 +419,12 @@ with DAG("article_linkage_updater",
             use_legacy_sql=False
         ))
 
-    for table_name, pk in [("article_links", "orig_id"), ("article_links_with_dataset", "orig_id"),
-                           ("article_merged_meta", "merged_id")]:
-        check_queries.append(BigQueryCheckOperator(
-            task_id="check_pks_are_unique_"+table_name.lower(),
-            sql=f"select count({pk}) = count(distinct({pk})) from {staging_dataset}.{table_name}",
-            use_legacy_sql=False
-        ))
-
     check_queries.extend([
+        BigQueryCheckOperator(
+            task_id="check_pks_are_unique_sources",
+            sql=f"select count(orig_id) = count(distinct(orig_id)) from {staging_dataset}.sources",
+            use_legacy_sql=False
+        ),
         BigQueryCheckOperator(
             task_id="all_ids_survived",
             sql=(f"select count(0) = 0 from (select id from {staging_dataset}.union_ids "
@@ -456,67 +452,33 @@ with DAG("article_linkage_updater",
         ),
         BigQueryCheckOperator(
             task_id="no_null_references",
-            sql=f"select count(0) = 0 from {staging_dataset}.mapped_references where id is null or ref_id is null",
+            sql=f"select count(0) = 0 from {staging_dataset}.references where id is null or ref_id is null",
             use_legacy_sql = False
         ),
     ])
 
     # We're done! Checks passed, so copy to production and post success to slack
     start_production_cp = DummyOperator(task_id="start_production_cp")
+    success_alert = get_post_success("Article linkage update succeeded!", dag)
+    curr_date = datetime.now().strftime("%Y%m%d")
+    with open(f"{os.environ.get('DAGS_FOLDER')}/schemas/{gcs_folder}/table_descriptions.json") as f:
+        table_desc = json.loads(f.read())
 
-    push_to_production = []
     for table in production_tables:
-        push_to_production.append(BigQueryToBigQueryOperator(
+        push_to_production = BigQueryToBigQueryOperator(
             task_id="copy_"+table.lower(),
             source_project_dataset_tables=[f"{staging_dataset}.{table}"],
             destination_project_dataset_table=f"{production_dataset}.{table}",
             create_disposition="CREATE_IF_NEEDED",
             write_disposition="WRITE_TRUNCATE"
-        ))
-
-    # this query is essentially just copying mapped_references to paper_references_merged, so
-    # putting this in the push_to_production array is not risky
-    push_to_production.append(
-        BigQueryInsertJobOperator(
-            task_id="copy_mapped_references_to_paper_references_merged",
-            configuration={
-                "query": {
-                    "query": f"select id as merged_id, ref_id from {staging_dataset}.mapped_references",
-                    "useLegacySql": False,
-                    "destinationTable": {
-                        "projectId": project_id,
-                        "datasetId": production_dataset,
-                        "tableId": "paper_references_merged"
-                    },
-                    "allowLargeResults": True,
-                    "createDisposition": "CREATE_IF_NEEDED",
-                    "writeDisposition": "WRITE_TRUNCATE"
-                }
-            },
         )
-    )
-
-    wait_for_production_copy = DummyOperator(task_id="wait_for_production_copy")
-
-    snapshots = []
-    curr_date = datetime.now().strftime("%Y%m%d")
-    for table in ["article_links", "article_links_nested", "paper_references_merged"]:
-        # mk the snapshot predictions table
-        snapshots.append(BigQueryToBigQueryOperator(
+        snapshot = BigQueryToBigQueryOperator(
             task_id=f"snapshot_{table}",
             source_project_dataset_tables=[f"{production_dataset}.{table}"],
             destination_project_dataset_table=f"{backup_dataset}.{table}_{curr_date}",
             create_disposition="CREATE_IF_NEEDED",
             write_disposition="WRITE_TRUNCATE"
-        ))
-
-    wait_for_snapshots = DummyOperator(task_id="wait_for_snapshots")
-
-    success_alert = get_post_success("Article linkage update succeeded!", dag)
-
-    with open(f"{os.environ.get('DAGS_FOLDER')}/schemas/{gcs_folder}/table_descriptions.json") as f:
-        table_desc = json.loads(f.read())
-    for table in production_tables + ["paper_references_merged"]:
+        )
         pop_descriptions = PythonOperator(
             task_id="populate_column_documentation_for_" + table,
             op_kwargs={
@@ -526,7 +488,7 @@ with DAG("article_linkage_updater",
             },
             python_callable=update_table_descriptions
         )
-        wait_for_snapshots >> pop_descriptions >> success_alert
+        start_production_cp >> push_to_production >> snapshot >> pop_descriptions >> success_alert
 
     downstream_tasks = [
         TriggerDagRunOperator(task_id="trigger_article_classification", trigger_dag_id="article_classification"),
@@ -542,7 +504,6 @@ with DAG("article_linkage_updater",
     (last_combination_query >> heavy_compute_inputs >> gce_instance_start >> [create_cset_ids, run_lid] >>
         gce_instance_stop >> [import_id_mapping, import_lid] >> start_final_transform_queries)
 
-    (last_transform_query >> check_queries >> start_production_cp >> push_to_production >> wait_for_production_copy >>
-        snapshots >> wait_for_snapshots)
+    last_transform_query >> check_queries >> start_production_cp
 
     success_alert >> downstream_tasks

@@ -1,7 +1,7 @@
 [
   {
     "mode": "REQUIRED",
-    "name": "id",
+    "name": "merged_id",
     "type": "STRING",
     "description": "CSET merged id of a set of articles"
   },
@@ -9,6 +9,6 @@
     "mode": "REQUIRED",
     "name": "ref_id",
     "type": "STRING",
-    "description": "Articles referenced by `id`"
+    "description": "Articles referenced by `merged_id`"
   }
 ]

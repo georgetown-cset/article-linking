@@ -1,9 +1,5 @@
 {
   "all_metadata_with_cld2_lid": "All metadata for the articles used in linkage.",
-  "article_links": "Maps orig_ids to merged_ids",
-  "article_links_nested": "Maps one merged_id to all its constitutent orig_ids",
-  "article_links_with_dataset": "Maps a merged id to each of its orig_ids and their dataset",
-  "article_merged_meta": "*Deprecated* -- use gcp_cset_links_v2.corpus_merged",
-  "mapped_references": "Maps a paper's id to the id of papers it references",
-  "paper_references_merged": "Maps a paper's id to the id of papers it references. This table is the same as mapped_references."
+  "sources": "Maps a merged id to each of its orig_ids and their dataset",
+  "references": "Maps a paper's merged id to the merged ids of papers it references"
 }
