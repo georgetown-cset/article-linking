@@ -2,10 +2,7 @@
 -- The all_metadata_with_cld2_lid table contains references identified by vendor IDs for each orig_id.
 -- For each merged_id, we take all its orig_ids' references, and look up the merged_ids of the references.
 -- We exclude references that appear outside our merged corpus.
-SELECT
-  DISTINCT links1.merged_id AS merged_id,
-  links2.merged_id AS ref_id
-FROM (
+WITH references AS (
   SELECT
     id,
     reference
@@ -18,15 +15,20 @@ FROM (
     SELECT
       orig_id
     FROM
-      {{ staging_dataset }}.sources )) AS references
+      {{ staging_dataset }}.article_links )
+)
+SELECT
+  DISTINCT referencing_papers.merged_id AS merged_id,
+  referenced_papers.merged_id AS ref_id
+FROM references
 LEFT JOIN
-  {{ staging_dataset }}.article_links AS links1
+  {{ staging_dataset }}.article_links AS referencing_papers
 ON
-references.id = links1.orig_id
+references.id = referencing_papers.orig_id
 LEFT JOIN
-  {{ staging_dataset }}.article_links AS links2
+  {{ staging_dataset }}.article_links AS referenced_papers
 ON
-references.reference = links2.orig_id
+references.reference = referenced_papers.orig_id
 WHERE
-  (links1.merged_id IS NOT NULL)
-  AND (links2.merged_id IS NOT NULL)
+  (referencing_papers.merged_id IS NOT NULL)
+  AND (referenced_papers.merged_id IS NOT NULL)

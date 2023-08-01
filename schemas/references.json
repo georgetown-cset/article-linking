@@ -9,6 +9,6 @@
     "mode": "REQUIRED",
     "name": "ref_id",
     "type": "STRING",
-    "description": "Articles referenced by `id`"
+    "description": "Articles referenced by `merged_id`"
   }
 ]
