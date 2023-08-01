@@ -18,7 +18,7 @@ FROM (
     SELECT
       orig_id
     FROM
-      {{ staging_dataset }}.article_links_with_dataset )) AS references
+      {{ staging_dataset }}.sources )) AS references
 LEFT JOIN
   {{ staging_dataset }}.article_links AS links1
 ON

@@ -33,7 +33,7 @@ mapped_references as (
     meta
   cross join unnest(split(references, ",")) as orig_id_ref
     inner join
-    {{ production_dataset }}.article_links
+    {{ production_dataset }}.sources
   on orig_id_ref = orig_id
   group by id
 )
