@@ -409,8 +409,9 @@ with DAG("article_linkage_updater",
     # we're about to copy tables from staging to production, so do checks to make sure we haven't broken anything
     # along the way
     check_queries = []
-    production_tables = ["sources", "references", "all_metadata_with_cld2_lid"]
-    for table_name in production_tables:
+    staging_tables = ["sources", "references", "all_metadata_with_cld2_lid"]
+    production_tables = ["sources", "references"]
+    for table_name in staging_tables:
         check_queries.append(BigQueryCheckOperator(
             task_id="check_monotonic_increase_"+table_name.lower(),
             sql=(f"select (select count(0) from {staging_dataset}.{table_name}) >= "
