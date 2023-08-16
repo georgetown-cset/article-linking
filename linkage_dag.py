@@ -409,8 +409,10 @@ with DAG("article_linkage_updater",
     # we're about to copy tables from staging to production, so do checks to make sure we haven't broken anything
     # along the way
     check_queries = []
-    production_tables = ["sources", "references", "all_metadata_with_cld2_lid"]
-    for table_name in production_tables:
+    all_metadata_table = "all_metadata_with_cld2_lid"
+    staging_tables = ["sources", "references", all_metadata_table]
+    production_tables = ["sources", "references"]
+    for table_name in staging_tables:
         check_queries.append(BigQueryCheckOperator(
             task_id="check_monotonic_increase_"+table_name.lower(),
             sql=(f"select (select count(0) from {staging_dataset}.{table_name}) >= "
@@ -488,6 +490,25 @@ with DAG("article_linkage_updater",
             python_callable=update_table_descriptions
         )
         start_production_cp >> push_to_production >> snapshot >> pop_descriptions >> success_alert
+
+    # We don't show the "all metadata" table in the production dataset, but we do need to
+    # be able to diff the current data from the data used in the last run in simhash_input
+    copy_cld2 = BigQueryToBigQueryOperator(
+        task_id=f"copy_{all_metadata_table}",
+        source_project_dataset_tables=[f"{staging_dataset}.{all_metadata_table}"],
+        destination_project_dataset_table=f"{staging_dataset}.{all_metadata_table}_last_run",
+        create_disposition="CREATE_IF_NEEDED",
+        write_disposition="WRITE_TRUNCATE"
+    )
+
+    snapshot_cld2 = BigQueryToBigQueryOperator(
+        task_id=f"snapshot_{all_metadata_table}",
+        source_project_dataset_tables=[f"{staging_dataset}.{all_metadata_table}"],
+        destination_project_dataset_table=f"{backup_dataset}.{all_metadata_table}_{curr_date}",
+        create_disposition="CREATE_IF_NEEDED",
+        write_disposition="WRITE_TRUNCATE"
+    )
+    start_production_cp >> copy_cld2 >> snapshot_cld2 >> success_alert
 
     # task structure
     clear_tmp_dir >> metadata_sequences_start
