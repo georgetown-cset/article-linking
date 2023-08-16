@@ -258,7 +258,7 @@ with DAG("article_linkage_updater",
     heavy_compute_inputs = [
         BigQueryToGCSOperator(
             task_id="export_old_cset_ids",
-            source_project_dataset_table=f"{production_dataset}.article_links",
+            source_project_dataset_table=f"{production_dataset}.sources",
             destination_cloud_storage_uris=f"gs://{bucket}/{tmp_dir}/prev_id_mapping/prev_id_mapping*.jsonl",
             export_format="NEWLINE_DELIMITED_JSON"
         ),
@@ -361,8 +361,8 @@ with DAG("article_linkage_updater",
         task_id="import_id_mapping",
         bucket=bucket,
         source_objects=[f"{tmp_dir}/id_mapping.jsonl"],
-        schema_object=f"{schema_dir}/article_links.json",
-        destination_project_dataset_table=f"{staging_dataset}.article_links",
+        schema_object=f"{schema_dir}/sources.json",
+        destination_project_dataset_table=f"{staging_dataset}.sources",
         source_format="NEWLINE_DELIMITED_JSON",
         create_disposition="CREATE_IF_NEEDED",
         write_disposition="WRITE_TRUNCATE"
@@ -429,7 +429,7 @@ with DAG("article_linkage_updater",
         BigQueryCheckOperator(
             task_id="all_ids_survived",
             sql=(f"select count(0) = 0 from (select id from {staging_dataset}.union_ids "
-                 f"where id not in (select orig_id from {staging_dataset}.article_links))"),
+                 f"where id not in (select orig_id from {staging_dataset}.sources))"),
             use_legacy_sql=False
         ),
         BigQueryCheckOperator(
@@ -443,9 +443,9 @@ with DAG("article_linkage_updater",
               select
                 concat(links1.orig_id, " ", links2.orig_id)
               from 
-                {staging_dataset}.article_links links1
+                {staging_dataset}.sources links1
               left join
-                {staging_dataset}.article_links links2
+                {staging_dataset}.sources links2
               on links1.merged_id = links2.merged_id
             )
             """,
