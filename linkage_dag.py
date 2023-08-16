@@ -456,6 +456,11 @@ with DAG("article_linkage_updater",
             sql=f"select count(0) = 0 from {staging_dataset}.references where id is null or ref_id is null",
             use_legacy_sql = False
         ),
+        BigQueryCheckOperator(
+            task_id="no_null_datasets",
+            sql=f"select count(0) = 0 from {staging_dataset}.sources where dataset is null",
+            use_legacy_sql=False
+        ),
     ])
 
     # We're done! Checks passed, so copy to production and post success to slack
