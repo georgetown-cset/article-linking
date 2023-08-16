@@ -9,7 +9,6 @@ from airflow.providers.google.cloud.operators.compute import ComputeEngineStartI
 from airflow.providers.google.cloud.operators.gcs import GCSDeleteObjectsOperator
 from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
 from airflow.providers.google.cloud.transfers.bigquery_to_gcs import BigQueryToGCSOperator
-from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from airflow.operators.bash import BashOperator
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.python import PythonOperator
@@ -490,12 +489,6 @@ with DAG("article_linkage_updater",
         )
         start_production_cp >> push_to_production >> snapshot >> pop_descriptions >> success_alert
 
-    downstream_tasks = [
-        TriggerDagRunOperator(task_id="trigger_article_classification", trigger_dag_id="article_classification"),
-        TriggerDagRunOperator(task_id="trigger_fields_of_study", trigger_dag_id="fields_of_study"),
-        TriggerDagRunOperator(task_id="trigger_new_fields_of_study", trigger_dag_id="new_fields_of_study"),
-    ]
-
     # task structure
     clear_tmp_dir >> metadata_sequences_start
     (metadata_sequences_end >> union_ids >> check_unique_input_ids >> union_metadata >> export_metadata >>
@@ -505,5 +498,3 @@ with DAG("article_linkage_updater",
         gce_instance_stop >> [import_id_mapping, import_lid] >> start_final_transform_queries)
 
     last_transform_query >> check_queries >> start_production_cp
-
-    success_alert >> downstream_tasks
