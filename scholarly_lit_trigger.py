@@ -13,7 +13,7 @@ default_args = {
     "email": ["jennifer.melot@georgetown.edu"],
     "email_on_failure": True,
     "email_on_retry": True,
-    "retries": 1,
+    "retries": 0,
     "retry_delay": timedelta(minutes=5),
     "on_failure_callback": task_fail_slack_alert
 }
