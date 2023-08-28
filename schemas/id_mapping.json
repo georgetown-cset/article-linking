@@ -10,11 +10,5 @@
     "name": "orig_id",
     "type": "STRING",
     "description": "Originating dataset's id for an article"
-  },
-  {
-    "mode": "REQUIRED",
-    "name": "dataset",
-    "type": "STRING",
-    "description": "Identifier for the dataset of article identified by orig_id"
   }
 ]

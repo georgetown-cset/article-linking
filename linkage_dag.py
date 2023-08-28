@@ -361,8 +361,8 @@ with DAG("article_linkage_updater",
         task_id="import_id_mapping",
         bucket=bucket,
         source_objects=[f"{tmp_dir}/id_mapping.jsonl"],
-        schema_object=f"{schema_dir}/sources.json",
-        destination_project_dataset_table=f"{staging_dataset}.sources",
+        schema_object=f"{schema_dir}/id_mapping.json",
+        destination_project_dataset_table=f"{staging_dataset}.id_mapping",
         source_format="NEWLINE_DELIMITED_JSON",
         create_disposition="CREATE_IF_NEEDED",
         write_disposition="WRITE_TRUNCATE"
@@ -413,10 +413,12 @@ with DAG("article_linkage_updater",
     staging_tables = ["sources", "references", all_metadata_table]
     production_tables = ["sources", "references"]
     for table_name in staging_tables:
+        compare_table_name = table_name if table_name != all_metadata_table else all_metadata_table+"_last_run"
+        compare_dataset = production_dataset if table_name != all_metadata_table else staging_dataset
         check_queries.append(BigQueryCheckOperator(
             task_id="check_monotonic_increase_"+table_name.lower(),
             sql=(f"select (select count(0) from {staging_dataset}.{table_name}) >= "
-                 f"(select 0.8*count(0) from {production_dataset}.{table_name})"),
+                 f"(select 0.8*count(0) from {compare_dataset}.{compare_table_name})"),
             use_legacy_sql=False
         ))
 
@@ -453,7 +455,7 @@ with DAG("article_linkage_updater",
         ),
         BigQueryCheckOperator(
             task_id="no_null_references",
-            sql=f"select count(0) = 0 from {staging_dataset}.references where id is null or ref_id is null",
+            sql=f"select count(0) = 0 from {staging_dataset}.references where merged_id is null or ref_id is null",
             use_legacy_sql = False
         ),
         BigQueryCheckOperator(
