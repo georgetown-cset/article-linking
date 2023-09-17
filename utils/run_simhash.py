@@ -35,13 +35,13 @@ def write_sim_strings(data_fi: str, output_fi: str, input_index: str = None, out
     print("writing updated index to "+output_index)
     pickle.dump(index, open(output_index, mode="wb"))
 
-    out = open(output_fi, mode="w")
-    for article_id, article_text in data_ids_and_values:
-        feats = Simhash(get_features(article_text))
-        dup_ids = index.get_near_dups(feats)
-        for dup_id in dup_ids:
-            if dup_id != article_id:
-                out.write(json.dumps({"id1": article_id, "id2": dup_id}) + "\n")
+    with open(output_fi, mode="w") as out:
+        for article_id, article_text in data_ids_and_values:
+            feats = Simhash(get_features(article_text))
+            dup_ids = index.get_near_dups(feats)
+            for dup_id in dup_ids:
+                if dup_id != article_id:
+                    out.write(json.dumps({"id1": article_id, "id2": dup_id}) + "\n")
 
 
 def get_year_partition(input_dir: str, output_dir: str) -> list:
@@ -68,6 +68,8 @@ def get_year_partition(input_dir: str, output_dir: str) -> list:
             if year not in year_to_outfi:
                 year_to_outfi[year] = open(os.path.join(output_dir, year+".tsv"), mode="w")
             year_to_outfi[year].write(f"{js['id']}\t{js['normalized_text']}\n")
+    for fi in year_to_outfi:
+        fi.close()
     return list(year_to_outfi.keys())
 
 
