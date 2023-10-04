@@ -46,9 +46,10 @@ def get_usable_ids(ids_dir: str) -> set:
     usable_ids = set()
     for fi in os.listdir(ids_dir):
         print("reading "+fi)
-        for line in open(os.path.join(ids_dir, fi)):
-            js = json.loads(line)
-            usable_ids.add(js["id1"])
+        with open(os.path.join(ids_dir, fi)) as f:
+            for line in f:
+                js = json.loads(line)
+                usable_ids.add(js["id1"])
     return usable_ids
 
 
@@ -64,20 +65,21 @@ def create_match_sets(match_dir: str, current_ids_dir: str = None) -> list:
     adj_list = {}
     usable_ids = get_usable_ids(current_ids_dir)
     for fi in os.listdir(match_dir):
-        for line in open(os.path.join(match_dir, fi)):
-            js = json.loads(line)
-            key1 = js["id1"]
-            key2 = js["id2"]
-            if (usable_ids is not None) and ((key1 not in usable_ids) or (key2 not in usable_ids)):
-                continue
-            if key1 not in adj_list:
-                adj_list[key1] = set()
-            adj_list[key1].add(key2)
-            # even if we're in a scenario where (according to a changed metric) A matches B but B doesn't match A,
-            # this will ensure they get added to the same match set
-            if key2 not in adj_list:
-                adj_list[key2] = set()
-            adj_list[key2].add(key1)
+        with open(os.path.join(match_dir, fi)) as f:
+            for line in f:
+                js = json.loads(line)
+                key1 = js["id1"]
+                key2 = js["id2"]
+                if (usable_ids is not None) and ((key1 not in usable_ids) or (key2 not in usable_ids)):
+                    continue
+                if key1 not in adj_list:
+                    adj_list[key1] = set()
+                adj_list[key1].add(key2)
+                # even if we're in a scenario where (according to a changed metric) A matches B but B doesn't match A,
+                # this will ensure they get added to the same match set
+                if key2 not in adj_list:
+                    adj_list[key2] = set()
+                adj_list[key2].add(key1)
     seen_ids = set()
     match_sets = []
     for k in adj_list.keys():
@@ -105,14 +107,15 @@ def create_match_keys(match_sets: list, match_file: str, prev_id_mapping_dir: st
         max_merg = "carticle_0"
         if prev_id_mapping_dir is not None:
             for fi in os.listdir(prev_id_mapping_dir):
-                for line in open(os.path.join(prev_id_mapping_dir, fi)):
-                    js = json.loads(line.strip())
-                    orig_id = js["orig_id"]
-                    merg_id = js["merged_id"]
-                    assert orig_id not in prev_orig_to_merg
-                    prev_orig_to_merg[orig_id] = merg_id
-                    if merg_id > max_merg:
-                        max_merg = merg_id
+                with open(os.path.join(prev_id_mapping_dir, fi)) as f:
+                    for line in f:
+                        js = json.loads(line.strip())
+                        orig_id = js["orig_id"]
+                        merg_id = js["merged_id"]
+                        assert orig_id not in prev_orig_to_merg
+                        prev_orig_to_merg[orig_id] = merg_id
+                        if merg_id > max_merg:
+                            max_merg = merg_id
         match_id = int(max_merg.split("carticle_")[1])+1
         num_new, num_old = 0, 0
         for ms in match_sets:

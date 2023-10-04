@@ -68,8 +68,8 @@ def get_year_partition(input_dir: str, output_dir: str) -> list:
             if year not in year_to_outfi:
                 year_to_outfi[year] = open(os.path.join(output_dir, year+".tsv"), mode="w")
             year_to_outfi[year].write(f"{js['id']}\t{js['normalized_text']}\n")
-    for fi in year_to_outfi:
-        fi.close()
+    for year in year_to_outfi:
+        year_to_outfi[year].close()
     return list(year_to_outfi.keys())
 
 
