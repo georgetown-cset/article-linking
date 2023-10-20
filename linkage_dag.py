@@ -9,6 +9,7 @@ from airflow.providers.google.cloud.operators.compute import ComputeEngineStartI
 from airflow.providers.google.cloud.operators.gcs import GCSDeleteObjectsOperator
 from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
 from airflow.providers.google.cloud.transfers.bigquery_to_gcs import BigQueryToGCSOperator
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from airflow.operators.bash import BashOperator
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.python import PythonOperator
@@ -472,6 +473,11 @@ with DAG("article_linkage_updater",
     with open(f"{os.environ.get('DAGS_FOLDER')}/schemas/{gcs_folder}/table_descriptions.json") as f:
         table_desc = json.loads(f.read())
 
+    trigger_org_er_and_metadata_merge = TriggerDagRunOperator(
+        task_id="trigger_org_er_and_metadata_merge",
+        trigger_dag_id="org_er_and_metadata_merge"
+    )
+
     for table in production_tables:
         push_to_production = BigQueryToBigQueryOperator(
             task_id="copy_"+table.lower(),
@@ -496,7 +502,8 @@ with DAG("article_linkage_updater",
             },
             python_callable=update_table_descriptions
         )
-        start_production_cp >> push_to_production >> snapshot >> pop_descriptions >> success_alert
+        (start_production_cp >> push_to_production >> snapshot >> pop_descriptions >> success_alert >>
+         trigger_org_er_and_metadata_merge)
 
     # We don't show the "all metadata" table in the production dataset, but we do need to
     # be able to diff the current data from the data used in the last run in simhash_input

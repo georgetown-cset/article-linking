@@ -40,17 +40,3 @@ with DAG("scholarly_lit_trigger",
             wait_for_completion=True
         )
         start >> trigger >> trigger_linkage
-
-    trigger_bulk_er = TriggerDagRunOperator(
-        task_id="trigger_bulk_org_er_updater",
-        trigger_dag_id="bulk_org_er_updater",
-        wait_for_completion=True
-    )
-
-    trigger_metadata_merge = TriggerDagRunOperator(
-        task_id="trigger_merged_article_metadata_updater",
-        trigger_dag_id="merged_article_metadata_updater",
-        wait_for_completion=True
-    )
-
-    trigger_linkage >> trigger_bulk_er >> trigger_metadata_merge
