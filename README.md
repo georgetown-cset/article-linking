@@ -5,7 +5,7 @@ This repository contains a description and supporting code for CSET's current me
 cross-dataset article linking. Note that we use "article" very loosely, although in a way that to our knowledge 
 is fairly consistent across corpora. Books, for example, are included.
 
-For each article in arXiv, WOS, Papers With Code, Semantic Scholar, and OpenAlex 
+For each article in arXiv, WOS, Papers With Code, Semantic Scholar, The Lens, and OpenAlex 
 we normalized titles, abstracts, and author last names. For the purpose of matching, we filtered out
 titles, abstracts, and DOIs that occurred more than 10 times in the corpus. We then considered each group of articles 
 within or across datasets that shared at least one of the following (non-null) metadata fields:
