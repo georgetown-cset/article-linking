@@ -1,0 +1,19 @@
+[sqlfluff]
+dialect=bigquery
+indent_unit = space
+exclude_rules = L014,L018,L027,L032,L034,L042,L044,L031
+
+[sqlfluff:rules]
+max_line_length = 120
+tab_space_size = 2
+
+[sqlfluff:rules:L010]
+capitalisation_policy = upper
+
+[sqlfluff:rules:L030]
+extended_capitalisation_policy = upper
+
+[sqlfluff:templater:jinja:context]
+staging_dataset = staging_literature
+production_dataset = literature
+params = {"strong": "title", "other": "year", "additional_checks": "", "tables": "staging_literature.table"}

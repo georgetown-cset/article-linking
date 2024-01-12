@@ -1,52 +1,52 @@
 [
   {
-    "mode": "NULLABLE", 
-    "name": "id", 
-    "type": "STRING"
-  }, 
-  {
-    "mode": "NULLABLE", 
-    "name": "title", 
-    "type": "STRING"
-  }, 
-  {
-    "mode": "NULLABLE", 
-    "name": "abstract", 
-    "type": "STRING"
-  }, 
-  {
-    "mode": "NULLABLE", 
-    "name": "clean_doi", 
-    "type": "STRING"
-  }, 
-  {
-    "mode": "NULLABLE", 
-    "name": "year", 
-    "type": "INTEGER"
-  }, 
-  {
-    "mode": "REPEATED", 
-    "name": "last_names", 
-    "type": "STRING"
-  }, 
-  {
-    "mode": "NULLABLE", 
-    "name": "references", 
-    "type": "STRING"
-  }, 
-  {
-    "mode": "NULLABLE", 
-    "name": "dataset", 
+    "mode": "NULLABLE",
+    "name": "id",
     "type": "STRING"
   },
   {
-    "mode": "NULLABLE", 
-    "name": "title_norm", 
+    "mode": "NULLABLE",
+    "name": "title",
     "type": "STRING"
-  }, 
+  },
   {
-    "mode": "NULLABLE", 
-    "name": "abstract_norm", 
+    "mode": "NULLABLE",
+    "name": "abstract",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "clean_doi",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "year",
+    "type": "INTEGER"
+  },
+  {
+    "mode": "REPEATED",
+    "name": "last_names",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "references",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "dataset",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "title_norm",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "abstract_norm",
     "type": "STRING"
   },
   {

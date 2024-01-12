@@ -1,10 +1,12 @@
 import json
+import os
 import shutil
 import unittest
-import os
-from utils.create_merge_ids import create_match_sets, create_match_keys
+
+from utils.create_merge_ids import create_match_keys, create_match_sets
 
 static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+
 
 class TestGetCombinedMap(unittest.TestCase):
     maxDiff = None
@@ -35,20 +37,28 @@ class TestGetCombinedMap(unittest.TestCase):
         match_dir = os.path.join(static_dir, "test_get_combined_map5")
         result_set_large = {"A", "B", "C", "D", "E"}
         result_set_small = {"F", "G", "H"}
-        expected_result = sorted([result_set_small, result_set_large], key=lambda k : len(k))
-        actual_result = sorted(create_match_sets(match_dir), key=lambda k : len(k))
+        expected_result = sorted(
+            [result_set_small, result_set_large], key=lambda k: len(k)
+        )
+        actual_result = sorted(create_match_sets(match_dir), key=lambda k: len(k))
         self.assertEqual(actual_result, expected_result)
 
     def test_get_match_sets_with_extra_id(self):
         # test with three disconnected sets. The set A - E will have one extra id (E) that should get filtered, and
         # the "small" set F-H will all be extra ids that should be filtered. The other small set I-J will have ids
         # distributed across two id files, but the set should be included.
-        match_dir = os.path.join(static_dir, "test_get_match_sets_with_extra_id", "match_pairs")
+        match_dir = os.path.join(
+            static_dir, "test_get_match_sets_with_extra_id", "match_pairs"
+        )
         ids_dir = os.path.join(static_dir, "test_get_match_sets_with_extra_id", "ids")
         result_set_large = {"A", "B", "C", "D"}
         result_set_small = {"I", "J"}
-        expected_result = sorted([result_set_small, result_set_large], key=lambda k : len(k))
-        actual_result = sorted(create_match_sets(match_dir, ids_dir), key=lambda k : len(k))
+        expected_result = sorted(
+            [result_set_small, result_set_large], key=lambda k: len(k)
+        )
+        actual_result = sorted(
+            create_match_sets(match_dir, ids_dir), key=lambda k: len(k)
+        )
         self.assertEqual(actual_result, expected_result)
 
     def test_create_match_keys(self):

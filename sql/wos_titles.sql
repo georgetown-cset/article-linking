@@ -1,7 +1,7 @@
 -- get wos titles (note that there may be more than one per article in different languages)
-select
+SELECT
   id,
-  title_id as title_id,
-  title as title
-from gcp_cset_clarivate.wos_titles_latest
-where title_type="item"
+  title_id AS title_id,
+  title AS title
+FROM gcp_cset_clarivate.wos_titles_latest
+WHERE title_type = "item"

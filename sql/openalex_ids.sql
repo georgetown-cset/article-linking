@@ -1,6 +1,5 @@
 -- get openalex article ids (used in validation)
-SELECT
-  DISTINCT(id)
+SELECT DISTINCT id
 FROM
   openalex.works
 WHERE

@@ -1,8 +1,10 @@
 -- find articles that match on one of the stronger indicators (title, abstract, doi, references) and one other indicator
-select a.id as all1_id, m.id as all2_id
-from {{staging_dataset}}.all_metadata_norm_filt as a
-inner join
-{{staging_dataset}}.all_metadata_norm_filt as m
-on (a.{{ params.strong }} = m.{{ params.strong }}) and
-    (a.{{ params.strong }} is not null) and (a.{{ params.strong }} != "") and
-    (a.{{ params.other }} = m.{{ params.other }}) and (a.{{ params.other }} is not null) {{params.additional_checks}}
+SELECT
+  a.id AS all1_id,
+  m.id AS all2_id
+FROM {{ staging_dataset }}.all_metadata_norm_filt AS a
+INNER JOIN
+  {{ staging_dataset }}.all_metadata_norm_filt AS m
+  ON (a.{{ params.strong }} = m.{{ params.strong }})
+    AND (a.{{ params.strong }} IS NOT NULL) AND (a.{{ params.strong }} != "")
+    AND (a.{{ params.other }} = m.{{ params.other }}) AND (a.{{ params.other }} IS NOT NULL) {{ params.additional_checks }}

@@ -1,0 +1,37 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.1.0
+    hooks:
+    -   id: trailing-whitespace
+        exclude: "__snapshots__"
+    -   id: end-of-file-fixer
+    -   id: check-yaml
+    -   id: check-added-large-files
+    -   id: check-json
+# The next step only applies if you have javascript files.
+# There should be a package.json that installs eslint
+# (or eslint-config-react-app if you are using gatsby).
+# -   repo: https://github.com/pre-commit/mirrors-eslint
+#     rev: v8.24.0
+#     hooks:
+#     -   id: eslint
+-   repo: https://github.com/PyCQA/isort
+    rev: 5.11.5
+    hooks:
+    -   id: isort
+-   repo: https://github.com/ambv/black
+    rev: 22.3.0
+    hooks:
+    -   id: black
+        language_version: python3
+-   repo: https://github.com/PyCQA/flake8
+    rev: 4.0.1
+    hooks:
+    -   id: flake8
+-   repo: https://github.com/sqlfluff/sqlfluff
+    rev: 0.10.1
+    hooks:
+    -   id: sqlfluff-lint
+    -   id: sqlfluff-fix

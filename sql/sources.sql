@@ -1,9 +1,9 @@
 -- add orig_id dataset to the sources table
-select distinct
+SELECT DISTINCT
   a.merged_id,
   a.orig_id,
   b.dataset
-from {{staging_dataset}}.id_mapping a
-inner join
-{{staging_dataset}}.union_metadata b
-on a.orig_id = b.id
+FROM {{ staging_dataset }}.id_mapping AS a
+INNER JOIN
+  {{ staging_dataset }}.union_metadata AS b
+  ON a.orig_id = b.id

@@ -1,5 +1,5 @@
 -- get arxiv author last names
-select
+SELECT
   id,
-  ARRAY(select keyname from UNNEST(authors.author)) as last_names
-from gcp_cset_arxiv_metadata.arxiv_metadata_latest
+  ARRAY(SELECT keyname FROM UNNEST(authors.author)) AS last_names
+FROM gcp_cset_arxiv_metadata.arxiv_metadata_latest

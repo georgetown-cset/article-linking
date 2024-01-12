@@ -1,0 +1,75 @@
+name: Python application
+
+on: [pull_request]
+
+jobs:
+  build:
+    name: tests-pass
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Test with pytest
+      run: |
+        coverage run -m pytest tests
+        coverage xml -o coverage/python.xml
+    - name: Report python coverage
+      uses: orgoro/coverage@v3
+      with:
+        coverageFile: coverage/python.xml
+        token: ${{ secrets.GITHUB_TOKEN }}
+    # The next few steps only apply if you have javascript files
+    # - name: Setup node
+    #   uses: actions/setup-node@v3
+    #   with:
+    #     node-version: '18'
+    # - name: Test with jest
+    #   shell: bash
+    #   run: |
+    #     npm install
+    #     npm test -- --coverage --coverageReporters="json-summary" --coverageReporters="text" | tee ./coverage.txt
+    #   shell: bash
+    # - name: Report javascript coverage
+    #   uses: MishaKav/jest-coverage-comment@v1.0.20
+    #   with:
+    #     title: "JavaScript Coverage"
+    #     summary-title: "Summary"
+    #     coverage-title: "Modified Files"
+    #     github-token: ${{ secrets.GITHUB_TOKEN }}
+    #     report-only-changed-files: true
+    #     coverage-path: ./JS-FOLDER-NAME/coverage.txt
+    #     coverage-summary-path: ./JS-FOLDER-NAME/coverage/coverage-summary.json
+    #     coverage-path-prefix: JS-FOLDER-NAME/src/
+    # - name: Build output files
+    #   run: |
+    #     npm run build
+    # - name: Check links in built files
+    #   id: link_check
+    #   run: |
+    #     find public -name "*.js" -exec grep -Eo "(http|https):\/\/[^]\{\}\"'\\\(\)\> ]+" {} \; | sort -u > linklist.txt
+    #     printf '%s\n%s\n%s\n' "# LinkChecker URL list" "# <meta charset=\"UTF-8\">" "$(cat linklist.txt)" > linklist.txt
+    #     linkchecker linklist.txt --check-extern --ignore-url="https://.*\.fastly\.net/.*" --ignore-url="https://.*\.mapbox\..*" --ignore-url=".*//a\W.*" --ignore-url="http://(a|x|тест)" -o failures > output.txt || true
+    #     cat output.txt
+    #     echo "num_links=$(wc -l < output.txt | sed 's/^ *//g')" >> $GITHUB_OUTPUT
+    #     echo "links<<EOFdelimiter" >> $GITHUB_OUTPUT
+    #     echo "$(cat output.txt)" >> $GITHUB_OUTPUT
+    #     echo "EOFdelimiter" >> $GITHUB_OUTPUT
+    # - name: Edit PR comment about link checking
+    #   if: steps.link_check.outputs.num_links > 0
+    #   uses: thollander/actions-comment-pull-request@v2
+    #   with:
+    #     message: |
+    #       There are ${{ steps.link_check.outputs.num_links }} broken links. Check the code for these links:
+    #       ${{ steps.link_check.outputs.links }}
+    #     comment_tag: link_check_msg
+    - name: Run linting
+      run: |
+        pre-commit run --all-files

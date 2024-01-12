@@ -4,8 +4,8 @@ import multiprocessing
 import os
 import pickle
 import re
-
 from datetime import datetime
+
 from my_simhash import Simhash, SimhashIndex
 
 
@@ -16,15 +16,22 @@ def get_features(s: str) -> list:
     width = 3
     s = s.lower()
     s = re.sub(r"[^\w]+", "", s)
-    return [s[i:i + width] for i in range(max(len(s) - width + 1, 1))]
+    return [s[i : i + width] for i in range(max(len(s) - width + 1, 1))]
 
 
-def write_sim_strings(data_fi: str, output_fi: str, input_index: str = None, output_index: str = None) -> None:
+def write_sim_strings(
+    data_fi: str, output_fi: str, input_index: str = None, output_index: str = None
+) -> None:
     """
     Does the similarity matching and writes out the outputs. Basic method from from https://github.com/leonsim/simhash
     """
-    data_ids_and_values = [line.strip().split("\t") for line in open(data_fi).readlines()]
-    objs = [(article_id, Simhash(get_features(article_text))) for article_id, article_text in data_ids_and_values]
+    data_ids_and_values = [
+        line.strip().split("\t") for line in open(data_fi).readlines()
+    ]
+    objs = [
+        (article_id, Simhash(get_features(article_text)))
+        for article_id, article_text in data_ids_and_values
+    ]
     index = None
     if (input_index is None) or not os.path.exists(input_index):
         index = SimhashIndex(objs, k=3)
@@ -32,7 +39,7 @@ def write_sim_strings(data_fi: str, output_fi: str, input_index: str = None, out
         index = pickle.load(open(input_index, mode="rb"))
         for obj_id, obj in objs:
             index.add(obj_id, obj)
-    print("writing updated index to "+output_index)
+    print("writing updated index to " + output_index)
     pickle.dump(index, open(output_index, mode="wb"))
 
     with open(output_fi, mode="w") as out:
@@ -66,7 +73,9 @@ def get_year_partition(input_dir: str, output_dir: str) -> list:
             js = json.loads(line)
             year = js["year"]
             if year not in year_to_outfi:
-                year_to_outfi[year] = open(os.path.join(output_dir, year+".tsv"), mode="w")
+                year_to_outfi[year] = open(
+                    os.path.join(output_dir, year + ".tsv"), mode="w"
+                )
             year_to_outfi[year].write(f"{js['id']}\t{js['normalized_text']}\n")
     for year in year_to_outfi:
         year_to_outfi[year].close()
@@ -78,17 +87,35 @@ if __name__ == "__main__":
     parser.add_argument("input_dir", help="directory of jsonl")
     parser.add_argument("--tmp_dir", default="simhash-tmp")
     parser.add_argument("--simhash_indexes", help="current simhash indexes")
-    parser.add_argument("--new_simhash_indexes", help="location where updated indexes should be written")
-    parser.add_argument("output_dir", help=("directory where output matches should be written. "
-                                            "Outputs will be in the form `year`.jsonl"))
+    parser.add_argument(
+        "--new_simhash_indexes", help="location where updated indexes should be written"
+    )
+    parser.add_argument(
+        "output_dir",
+        help=(
+            "directory where output matches should be written. "
+            "Outputs will be in the form `year`.jsonl"
+        ),
+    )
     args = parser.parse_args()
 
     years = get_year_partition(args.input_dir, args.tmp_dir)
     print("running simhash")
     day = datetime.now().strftime("%Y-%m-%d")
     with multiprocessing.Pool() as p:
-        p.starmap(write_sim_strings,
-            [(os.path.join(args.tmp_dir, year+".tsv"), os.path.join(args.output_dir, f"{year}_{day}.jsonl"),
-              None if args.simhash_indexes is None else os.path.join(args.simhash_indexes, f"{year}.pkl"),
-              None if args.new_simhash_indexes is None else os.path.join(args.new_simhash_indexes, f"{year}.pkl"))
-        for year in years])
+        p.starmap(
+            write_sim_strings,
+            [
+                (
+                    os.path.join(args.tmp_dir, year + ".tsv"),
+                    os.path.join(args.output_dir, f"{year}_{day}.jsonl"),
+                    None
+                    if args.simhash_indexes is None
+                    else os.path.join(args.simhash_indexes, f"{year}.pkl"),
+                    None
+                    if args.new_simhash_indexes is None
+                    else os.path.join(args.new_simhash_indexes, f"{year}.pkl"),
+                )
+                for year in years
+            ],
+        )

@@ -1,2 +1,2 @@
 -- get pwc ids (used in validation)
-select distinct paper_url as id from papers_with_code.papers_with_abstracts
+SELECT DISTINCT paper_url AS id FROM papers_with_code.papers_with_abstracts

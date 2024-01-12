@@ -7,13 +7,14 @@ Creates match sets from pairs of linked articles, assigns each match set an id, 
 each id to each article in its match set.
 """
 
+
 def create_cset_article_id(idx: int):
     """
     Create CSET article id, e.g. carticle_0000000001
     :param idx: article number
     :return: string in the form carticle_0000000001
     """
-    zero_padding = "0"*(10-len(str(idx)))
+    zero_padding = "0" * (10 - len(str(idx)))
     return f"carticle_{zero_padding}{idx}"
 
 
@@ -31,7 +32,9 @@ def get_connected_edges(adj_list: dict, key: str) -> set:
         v = to_explore.pop()
         if v not in conn_edges:
             conn_edges.add(v)
-            to_explore = to_explore.union({k for k in adj_list[v] if k not in conn_edges})
+            to_explore = to_explore.union(
+                {k for k in adj_list[v] if k not in conn_edges}
+            )
     return conn_edges
 
 
@@ -45,7 +48,7 @@ def get_usable_ids(ids_dir: str) -> set:
         return None
     usable_ids = set()
     for fi in os.listdir(ids_dir):
-        print("reading "+fi)
+        print("reading " + fi)
         with open(os.path.join(ids_dir, fi)) as f:
             for line in f:
                 js = json.loads(line)
@@ -70,7 +73,9 @@ def create_match_sets(match_dir: str, current_ids_dir: str = None) -> list:
                 js = json.loads(line)
                 key1 = js["id1"]
                 key2 = js["id2"]
-                if (usable_ids is not None) and ((key1 not in usable_ids) or (key2 not in usable_ids)):
+                if (usable_ids is not None) and (
+                    (key1 not in usable_ids) or (key2 not in usable_ids)
+                ):
                     continue
                 if key1 not in adj_list:
                     adj_list[key1] = set()
@@ -93,7 +98,9 @@ def create_match_sets(match_dir: str, current_ids_dir: str = None) -> list:
     return match_sets
 
 
-def create_match_keys(match_sets: list, match_file: str, prev_id_mapping_dir: str = None):
+def create_match_keys(
+    match_sets: list, match_file: str, prev_id_mapping_dir: str = None
+):
     """
     Given a match set, creates an id for that match set, and writes out a jsonl mapping each article in the match
     set to that id
@@ -116,14 +123,16 @@ def create_match_keys(match_sets: list, match_file: str, prev_id_mapping_dir: st
                         prev_orig_to_merg[orig_id] = merg_id
                         if merg_id > max_merg:
                             max_merg = merg_id
-        match_id = int(max_merg.split("carticle_")[1])+1
+        match_id = int(max_merg.split("carticle_")[1]) + 1
         num_new, num_old = 0, 0
         for ms in match_sets:
             cset_article_id = None
             # if we have exactly one existing id, reuse it, even if new articles are matched to it.
             # if two articles that previously had different carticle ids are now in the same match set,
             # create a new carticle id
-            existing_ids = set([prev_orig_to_merg[m] for m in ms if m in prev_orig_to_merg])
+            existing_ids = set(
+                [prev_orig_to_merg[m] for m in ms if m in prev_orig_to_merg]
+            )
             if len(existing_ids) == 1:
                 cset_article_id = existing_ids.pop()
                 num_old += 1
@@ -132,23 +141,35 @@ def create_match_keys(match_sets: list, match_file: str, prev_id_mapping_dir: st
                 num_new += 1
                 match_id += 1
             for article in ms:
-                out.write(json.dumps({
-                    "merged_id": cset_article_id,
-                    "orig_id": article
-                })+"\n")
+                out.write(
+                    json.dumps({"merged_id": cset_article_id, "orig_id": article})
+                    + "\n"
+                )
     print(f"wrote {num_new} new ids and reused {num_old} ids")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--match_dir", required=True,
-                        help="directory of exported jsonl from bigquery containing pairs of article matches")
-    parser.add_argument("--merge_file", required=True, help="file where merged ids should be written")
-    parser.add_argument("--prev_id_mapping_dir",
-                        help="directory of exported jsonl from bigquery containing pairs of article matches")
-    parser.add_argument("--current_ids_dir", help=("directory containing jsonl with one key, 'id'. "
-                                                   "These are the ids that should be included in output. "
-                                                   "If None, no ids will be filtered."))
+    parser.add_argument(
+        "--match_dir",
+        required=True,
+        help="directory of exported jsonl from bigquery containing pairs of article matches",
+    )
+    parser.add_argument(
+        "--merge_file", required=True, help="file where merged ids should be written"
+    )
+    parser.add_argument(
+        "--prev_id_mapping_dir",
+        help="directory of exported jsonl from bigquery containing pairs of article matches",
+    )
+    parser.add_argument(
+        "--current_ids_dir",
+        help=(
+            "directory containing jsonl with one key, 'id'. "
+            "These are the ids that should be included in output. "
+            "If None, no ids will be filtered."
+        ),
+    )
     args = parser.parse_args()
 
     match_sets = create_match_sets(args.match_dir, args.current_ids_dir)
