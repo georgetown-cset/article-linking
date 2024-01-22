@@ -6,7 +6,6 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.python import PythonOperator
-from airflow.providers.google.cloud.sensors.gcs import GCSObjectExistenceSensor
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from airflow.providers.google.cloud.operators.bigquery import (
     BigQueryCheckOperator,
@@ -20,6 +19,7 @@ from airflow.providers.google.cloud.operators.dataflow import (
     DataflowCreatePythonJobOperator,
 )
 from airflow.providers.google.cloud.operators.gcs import GCSDeleteObjectsOperator
+from airflow.providers.google.cloud.sensors.gcs import GCSObjectExistenceSensor
 from airflow.providers.google.cloud.transfers.bigquery_to_bigquery import (
     BigQueryToBigQueryOperator,
 )
@@ -372,7 +372,7 @@ with DAG(
         task_id="wait_for_simhash_index",
         bucket=DATA_BUCKET,
         object=f"{tmp_dir}/done_files/simhash_is_done",
-        deferrable=True
+        deferrable=True,
     )
 
     create_cset_ids = BashOperator(
@@ -384,7 +384,7 @@ with DAG(
         task_id="wait_for_cset_ids",
         bucket=DATA_BUCKET,
         object=f"{tmp_dir}/done_files/ids_are_done",
-        deferrable=True
+        deferrable=True,
     )
 
     push_to_gcs = BashOperator(
@@ -632,12 +632,25 @@ with DAG(
         >> wait_for_combine
     )
 
-    (last_combination_query >> heavy_compute_inputs >> gce_instance_start >> prep_environment >>
-     update_simhash_index >> wait_for_simhash_index >> create_cset_ids >> wait_for_cset_ids >> push_to_gcs >>
-     gce_instance_stop)
+    (
+        last_combination_query
+        >> heavy_compute_inputs
+        >> gce_instance_start
+        >> prep_environment
+        >> update_simhash_index
+        >> wait_for_simhash_index
+        >> create_cset_ids
+        >> wait_for_cset_ids
+        >> push_to_gcs
+        >> gce_instance_stop
+    )
 
     gce_instance_start >> run_lid >> gce_instance_stop
 
-    gce_instance_stop >> [import_id_mapping, import_lid] >> start_final_transform_queries
+    (
+        gce_instance_stop
+        >> [import_id_mapping, import_lid]
+        >> start_final_transform_queries
+    )
 
     last_transform_query >> check_queries >> start_production_cp
