@@ -2,13 +2,13 @@
 -- on arxiv where possible
 WITH arxiv_pwc_mapping AS (
   SELECT
-    gcp_cset_arxiv_metadata.arxiv_metadata_latest.id AS id1,
-    papers_with_code.papers_with_abstracts.paper_url AS id2
+    arxiv_metadata_latest.id AS id1,
+    papers_with_abstracts.paper_url AS id2
   FROM
     gcp_cset_arxiv_metadata.arxiv_metadata_latest
   INNER JOIN
     papers_with_code.papers_with_abstracts
-    ON gcp_cset_arxiv_metadata.arxiv_metadata_latest.id = papers_with_code.papers_with_abstracts.arxiv_id
+    ON arxiv_metadata_latest.id = papers_with_abstracts.arxiv_id
 )
 
 SELECT

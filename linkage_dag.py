@@ -339,6 +339,7 @@ with DAG(
     )
 
     prep_environment_script_sequence = [
+        f"/snap/bin/gsutil cp gs://{bucket}/{gcs_folder}/vm_scripts/*.sh .",
         "cd /mnt/disks/data",
         "rm -rf run",
         "mkdir run",
@@ -364,7 +365,7 @@ with DAG(
 
     update_simhash_index = BashOperator(
         task_id="update_simhash_index",
-        bash_command=f'gcloud compute ssh jm3312@{gce_resource_id} --zone {gce_zone} --command "bash run_simhash_scripts.sh &"',
+        bash_command=f'gcloud compute ssh jm3312@{gce_resource_id} --zone {gce_zone} --command "bash run_simhash_scripts.sh &> log &"',
     )
 
     wait_for_simhash_index = GCSObjectExistenceSensor(
@@ -374,20 +375,9 @@ with DAG(
         deferrable=True
     )
 
-    ids_script_sequence = [
-        (
-            "python3 create_merge_ids.py --match_dir usable_ids --prev_id_mapping_dir prev_id_mapping "
-            "--merge_file id_mapping.jsonl --current_ids_dir article_pairs"
-        ),
-        f"/snap/bin/gsutil -m cp id_mapping.jsonl gs://{bucket}/{gcs_folder}/tmp/",
-        f"/snap/bin/gsutil -m cp simhash_results/* gs://{bucket}/{gcs_folder}/simhash_results/",
-        f"/snap/bin/gsutil -m cp new_simhash_indexes/* gs://{bucket}/{gcs_folder}/simhash_indexes/",
-    ]
-    ids_vm_script = " && ".join(ids_script_sequence)
-
     create_cset_ids = BashOperator(
         task_id="create_cset_ids",
-        bash_command=f'gcloud compute ssh jm3312@{gce_resource_id} --zone {gce_zone} --command "{ids_vm_script}"',
+        bash_command=f'gcloud compute ssh jm3312@{gce_resource_id} --zone {gce_zone} --command "bash run_ids_scripts.sh &> log &"',
     )
 
     wait_for_cset_ids = GCSObjectExistenceSensor(

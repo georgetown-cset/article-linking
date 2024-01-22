@@ -9,9 +9,7 @@ gsutil rm -r gs://airflow-data-exchange/article_linkage/schemas/*
 gsutil cp schemas/* gs://airflow-data-exchange/article_linkage/schemas/
 gsutil rm -r gs://us-east1-production-cc2-202-b42a7a54-bucket/dags/schemas/article_linkage/*
 gsutil -m cp schemas/* gs://us-east1-production-cc2-202-b42a7a54-bucket/dags/schemas/article_linkage/
-gsutil cp utils/create_merge_ids.py gs://airflow-data-exchange/article_linkage/vm_scripts/
-gsutil cp utils/run_simhash.py gs://airflow-data-exchange/article_linkage/vm_scripts/
-gsutil cp utils/my_simhash.py gs://airflow-data-exchange/article_linkage/vm_scripts/
+gsutil cp utils/* gs://airflow-data-exchange/article_linkage/vm_scripts/
 gsutil cp utils/article_linkage_lid_dataflow_requirements.txt gs://us-east1-production-cc2-202-b42a7a54-bucket/dags/requirements/article_linkage_lid_dataflow_requirements.txt
 gsutil cp utils/article_linkage_text_clean_requirements.txt gs://us-east1-production-cc2-202-b42a7a54-bucket/dags/requirements/article_linkage_text_clean_requirements.txt
 gsutil cp utils/clean_corpus.py gs://us-east1-production-cc2-202-b42a7a54-bucket/dags/linkage_scripts/
