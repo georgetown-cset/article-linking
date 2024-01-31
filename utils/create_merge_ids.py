@@ -56,17 +56,15 @@ def get_usable_ids(ids_dir: str) -> set:
     return usable_ids
 
 
-def create_match_sets(match_dir: str, exclude_dir: str, current_ids_dir: str = None) -> list:
+def get_exclude_matches(exclude_dir: str) -> dict:
     """
-    Given a directory of exported jsonl files containing article matches, generates a list of sets of matched articles,
-    including "transitive matches".
-    :param match_dir: directory of exported jsonl files containing article matches
+    Build dict mapping ids to sets of other ids they should not be matched to
     :param exclude_dir: directory of jsonl files containing article pairs that should not be matched together
-    :param current_ids_dir: optional dir containing the current set of ids to use in jsonl form. If None, all ids will be used
-    :return: list of sets of matched articles
+    :return: dict mapping an id to a set of ids that are not valid matches
     """
-    print("reading pairs to not match")
     dont_match = {}
+    if not exclude_dir:
+        return dont_match
     for fi in os.listdir(exclude_dir):
         with open(os.path.join(exclude_dir, fi)) as f:
             for line in f:
@@ -75,8 +73,22 @@ def create_match_sets(match_dir: str, exclude_dir: str, current_ids_dir: str = N
                     dont_match[js["id1"]] = set()
                 if js["id2"] not in dont_match:
                     dont_match[js["id2"]] = set()
-                js["id1"].add(js["id2"])
-                js["id2"].add(js["id1"])
+                dont_match[js["id1"]].add(js["id2"])
+                dont_match[js["id2"]].add(js["id1"])
+    return dont_match
+
+
+def create_match_sets(match_dir: str,  current_ids_dir: str = None, exclude_dir: str = None) -> list:
+    """
+    Given a directory of exported jsonl files containing article matches, generates a list of sets of matched articles,
+    including "transitive matches".
+    :param match_dir: directory of exported jsonl files containing article matches
+    :param current_ids_dir: optional dir containing the current set of ids to use in jsonl form. If None, all ids will be used
+    :param exclude_dir: directory of jsonl files containing article pairs that should not be matched together
+    :return: list of sets of matched articles
+    """
+    print("reading pairs to not match")
+    dont_match = get_exclude_matches(exclude_dir)
     print("getting adjacency lists")
     adj_list = {}
     usable_ids = get_usable_ids(current_ids_dir)
