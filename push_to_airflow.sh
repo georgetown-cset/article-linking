@@ -1,5 +1,4 @@
 gsutil cp linkage_dag.py gs://us-east1-production-cc2-202-b42a7a54-bucket/dags/
-gsutil cp scholarly_lit_trigger.py gs://us-east1-production-cc2-202-b42a7a54-bucket/dags/
 gsutil cp metadata_merge_trigger.py gs://us-east1-production-cc2-202-b42a7a54-bucket/dags/
 gsutil rm -r gs://us-east1-production-cc2-202-b42a7a54-bucket/dags/sql/article_linkage/*
 gsutil -m cp sql/* gs://us-east1-production-cc2-202-b42a7a54-bucket/dags/sql/article_linkage/
