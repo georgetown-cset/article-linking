@@ -327,6 +327,12 @@ with DAG(
             destination_cloud_storage_uris=f"gs://{bucket}/{tmp_dir}/lid_input/lid_input*.jsonl",
             export_format="NEWLINE_DELIMITED_JSON",
         ),
+        BigQueryToGCSOperator(
+            task_id="export_unlink",
+            source_project_dataset_table=f"{staging_dataset}.unlink",
+            destination_cloud_storage_uris=f"gs://{bucket}/{tmp_dir}/unlink/data*.jsonl",
+            export_format="NEWLINE_DELIMITED_JSON",
+        ),
     ]
 
     # Start up godzilla of article linkage, update simhash indexes of title+abstract, run simhash, then create the
@@ -353,6 +359,7 @@ with DAG(
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/simhash_input .",
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{gcs_folder}/simhash_indexes .",
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{gcs_folder}/simhash_results .",
+        f"/snap/bin/gsutil -m cp -r gs://{bucket}/{gcs_folder}/unlink .",
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/prev_id_mapping .",
         "mkdir new_simhash_indexes",
     ]
