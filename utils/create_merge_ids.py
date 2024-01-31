@@ -78,7 +78,9 @@ def get_exclude_matches(exclude_dir: str) -> dict:
     return dont_match
 
 
-def create_match_sets(match_dir: str,  current_ids_dir: str = None, exclude_dir: str = None) -> list:
+def create_match_sets(
+    match_dir: str, current_ids_dir: str = None, exclude_dir: str = None
+) -> list:
     """
     Given a directory of exported jsonl files containing article matches, generates a list of sets of matched articles,
     including "transitive matches".
@@ -185,7 +187,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--exclude_dir",
         required=True,
-        help="directory of article pairs that should not be matched"
+        help="directory of article pairs that should not be matched",
     )
     parser.add_argument(
         "--merge_file", required=True, help="file where merged ids should be written"
@@ -204,5 +206,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    match_sets = create_match_sets(args.match_dir, args.exclude_dir, args.current_ids_dir)
+    match_sets = create_match_sets(
+        args.match_dir, args.exclude_dir, args.current_ids_dir
+    )
     create_match_keys(match_sets, args.merge_file, args.prev_id_mapping_dir)

@@ -69,7 +69,10 @@ class TestGetCombinedMap(unittest.TestCase):
         # test with matches excluded
         exclude_dir = os.path.join(static_dir, "test_skip_matches_ids_to_skip")
         expected_result_excludes = [{"A", "B"}, {"C"}, {"D"}, {"E"}]
-        self.assertEqual(create_match_sets(match_dir, exclude_dir=exclude_dir), expected_result_excludes)
+        self.assertEqual(
+            create_match_sets(match_dir, exclude_dir=exclude_dir),
+            expected_result_excludes,
+        )
 
     def test_create_match_keys(self):
         # the first set will contain two old elts from the same match set and one new elt; should keep its id
