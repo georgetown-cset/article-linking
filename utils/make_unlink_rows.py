@@ -4,9 +4,9 @@ import csv
 
 def make_pairs(manual_to_orig: dict) -> list:
     """
-
-    :param manual_to_orig:
-    :return:
+    Make all pairs of ids that should be unlinked
+    :param manual_to_orig: Dict mapping manually assigned ids to original ids that we believe to be the same article
+    :return: A list of pairs of ids that should not be linked together
     """
     pairs = []
     for manual1 in manual_to_orig:
@@ -21,10 +21,11 @@ def make_pairs(manual_to_orig: dict) -> list:
 
 def write_unlink_rows(unlinking_file: str, output_file: str) -> None:
     """
-
-    :param unlinking_file:
-    :param output_file:
-    :return:
+    Write a sql file containing a query that adds new rows to the staging_literature.unlink table
+    :param unlinking_file: CSV containing two columns, `manual_id` (a manually assigned id marking articles that are the same),
+      and `orig_id`, the id for the article in its source corpus
+    :param output_file: SQL file containing a query that adds new rows to staging_literature.unlink
+    :return: None
     """
     manual_to_orig = {}
     with open(unlinking_file) as f:

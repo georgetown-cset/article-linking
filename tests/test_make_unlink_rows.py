@@ -14,7 +14,8 @@ class TestMakeUnlinkRows(unittest.TestCase):
             "2": {"d", "e"},
             "3": {"f"}
         }
-        expected_output = [
+        gen_sort_key = lambda pair: f"{pair[0]}-{pair[1]}"
+        expected_output = sorted([
             ("a", "d"),
             ("a", "e"),
             ("a", "f"),
@@ -31,5 +32,5 @@ class TestMakeUnlinkRows(unittest.TestCase):
             ("f", "b"),
             ("f", "d"),
             ("f", "e")
-        ]
-        self.assertEqual(expected_output, make_pairs(manual_to_orig))
+        ], key=gen_sort_key)
+        self.assertEqual(expected_output, sorted(make_pairs(manual_to_orig), key=gen_sort_key))
