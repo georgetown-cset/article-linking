@@ -44,7 +44,7 @@ staging_dataset = f"staging_{production_dataset}"
 
 with DAG(
     "article_linkage_updater",
-    default_args=get_default_args(),
+    default_args=get_default_args(pocs=["Jennifer"]),
     description="Links articles across our scholarly lit holdings.",
     schedule_interval=None,
     user_defined_macros={
