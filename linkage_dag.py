@@ -41,10 +41,12 @@ from dataloader.scripts.populate_documentation import update_table_descriptions
 
 production_dataset = "literature"
 staging_dataset = f"staging_{production_dataset}"
+args = get_default_args(pocs=["Jennifer"])
+args["retries"] = 1
 
 with DAG(
     "article_linkage_updater",
-    default_args=get_default_args(pocs=["Jennifer"]),
+    default_args=args,
     description="Links articles across our scholarly lit holdings.",
     schedule_interval=None,
     user_defined_macros={

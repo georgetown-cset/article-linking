@@ -5,7 +5,6 @@ from airflow.operators.dummy import DummyOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from dataloader.airflow_utils.defaults import get_default_args
 
-
 with DAG(
     "org_er_and_metadata_merge",
     default_args=get_default_args(pocs=["Jennifer"]),
