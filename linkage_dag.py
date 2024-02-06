@@ -361,7 +361,7 @@ with DAG(
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/simhash_input .",
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{gcs_folder}/simhash_indexes .",
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{gcs_folder}/simhash_results .",
-        f"/snap/bin/gsutil -m cp -r gs://{bucket}/{gcs_folder}/unlink .",
+        f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/unlink .",
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/prev_id_mapping .",
         "mkdir new_simhash_indexes",
     ]
