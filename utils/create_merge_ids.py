@@ -207,6 +207,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     match_sets = create_match_sets(
-        args.match_dir, args.exclude_dir, args.current_ids_dir
+        args.match_dir, args.current_ids_dir, args.exclude_dir
     )
     create_match_keys(match_sets, args.merge_file, args.prev_id_mapping_dir)
