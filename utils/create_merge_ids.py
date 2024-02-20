@@ -128,13 +128,14 @@ def create_match_sets(
 
 
 def create_match_keys(
-    match_sets: list, match_file: str, prev_id_mapping_dir: str = None
+    match_sets: list, match_file: str, ids_to_drop: str, prev_id_mapping_dir: str = None
 ):
     """
     Given a match set, creates an id for that match set, and writes out a jsonl mapping each article in the match
     set to that id
     :param match_sets: list of match sets
     :param match_file: file where id mapping should be written
+    :param ids_to_drop: directory containing merged ids that should not be used in jsonl form
     :param prev_id_mapping_dir: optional dir containing previous id mappings in jsonl form
     :return: None
     """
@@ -152,6 +153,12 @@ def create_match_keys(
                         prev_orig_to_merg[orig_id] = merg_id
                         if merg_id > max_merg:
                             max_merg = merg_id
+        ignore_ids = set()
+        for fi in os.listdir(ids_to_drop):
+            with open(os.path.join(ids_to_drop, fi)) as f:
+                for line in f:
+                    js = json.loads(line.strip())
+                    ignore_ids.add(js["merged_id"])
         match_id = int(max_merg.split("carticle_")[1]) + 1
         num_new, num_old = 0, 0
         for ms in match_sets:
@@ -162,7 +169,7 @@ def create_match_keys(
             existing_ids = set(
                 [prev_orig_to_merg[m] for m in ms if m in prev_orig_to_merg]
             )
-            if len(existing_ids) == 1:
+            if len(existing_ids) == 1 and list(existing_ids)[0] not in ignore_ids:
                 cset_article_id = existing_ids.pop()
                 num_old += 1
             else:
@@ -190,6 +197,11 @@ if __name__ == "__main__":
         help="directory of article pairs that should not be matched",
     )
     parser.add_argument(
+        "--ids_to_drop",
+        required=True,
+        help="file containing ids that should not be used",
+    )
+    parser.add_argument(
         "--merge_file", required=True, help="file where merged ids should be written"
     )
     parser.add_argument(
@@ -209,4 +221,4 @@ if __name__ == "__main__":
     match_sets = create_match_sets(
         args.match_dir, args.current_ids_dir, args.exclude_dir
     )
-    create_match_keys(match_sets, args.merge_file, args.prev_id_mapping_dir)
+    create_match_keys(match_sets, args.merge_file, args.ids_to_drop, args.prev_id_mapping_dir)
