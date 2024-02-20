@@ -221,4 +221,6 @@ if __name__ == "__main__":
     match_sets = create_match_sets(
         args.match_dir, args.current_ids_dir, args.exclude_dir
     )
-    create_match_keys(match_sets, args.merge_file, args.ids_to_drop, args.prev_id_mapping_dir)
+    create_match_keys(
+        match_sets, args.merge_file, args.ids_to_drop, args.prev_id_mapping_dir
+    )
