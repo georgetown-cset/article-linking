@@ -403,11 +403,6 @@ with DAG(
         deferrable=True,
     )
 
-    push_to_gcs = BashOperator(
-        task_id="push_to_gcs",
-        bash_command=f'gcloud compute ssh jm3312@{gce_resource_id} --zone {gce_zone} --command "run_ids_script.sh &"',
-    )
-
     # while the carticle ids are updating, run lid on the titles and abstracts
     lid_dataflow_options = {
         "project": project_id,
@@ -657,7 +652,6 @@ with DAG(
         >> wait_for_simhash_index
         >> create_cset_ids
         >> wait_for_cset_ids
-        >> push_to_gcs
         >> gce_instance_stop
     )
 
