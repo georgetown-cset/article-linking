@@ -1,9 +1,9 @@
 -- aggregate pwc metadata
-select
-  paper_url as id,
+SELECT
+  paper_url AS id,
   title,
   abstract,
-  extract(year from date) as year,
+  extract(YEAR FROM date) AS year,
   -- these are actually full names, but they will be turned into last names by the cleaning script
-  authors as last_names
-from papers_with_code.papers_with_abstracts
+  authors AS last_names
+FROM papers_with_code.papers_with_abstracts

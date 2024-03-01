@@ -1,25 +1,39 @@
-with meaningfully_titled as (
-  select title_norm from (select title_norm, count(distinct(id)) as num_ids from {{ staging_dataset }}.all_metadata_norm group by title_norm) where num_ids < 11
+WITH meaningfully_titled AS (
+  SELECT title_norm
+  FROM (SELECT
+    title_norm,
+    count(distinct(id)) AS num_ids
+    FROM {{ staging_dataset }}.all_metadata_norm GROUP BY title_norm) WHERE num_ids < 11
 ),
 
-meaningfully_doied as (
-  select clean_doi from (select clean_doi, count(distinct(id)) as num_ids from {{ staging_dataset }}.all_metadata_norm group by clean_doi) where num_ids < 11
+meaningfully_doied AS (
+  SELECT clean_doi
+  FROM (SELECT
+    clean_doi,
+    count(distinct(id)) AS num_ids
+    FROM {{ staging_dataset }}.all_metadata_norm GROUP BY clean_doi) WHERE num_ids < 11
 ),
 
-meaningfully_abstracted as (
-  select abstract_norm from (select abstract_norm, count(distinct(id)) as num_ids from {{ staging_dataset }}.all_metadata_norm group by abstract_norm) where num_ids < 11
+meaningfully_abstracted AS (
+  SELECT abstract_norm
+  FROM (SELECT
+    abstract_norm,
+    count(distinct(id)) AS num_ids
+    FROM {{ staging_dataset }}.all_metadata_norm GROUP BY abstract_norm) WHERE num_ids < 11
 )
 
-select
+SELECT
   id,
   title,
   abstract,
-  case when clean_doi in (select clean_doi from meaningfully_doied) then clean_doi else null end as clean_doi,
+  CASE WHEN clean_doi IN (SELECT clean_doi FROM meaningfully_doied) THEN clean_doi END AS clean_doi,
   year,
   last_names,
   references,
   dataset,
-  case when title_norm in (select title_norm from meaningfully_titled) then title_norm else null end as title_norm,
-  case when abstract_norm in (select abstract_norm from meaningfully_abstracted) then abstract_norm else null end as abstract_norm,
+  CASE WHEN title_norm IN (SELECT title_norm FROM meaningfully_titled) THEN title_norm END AS title_norm,
+  CASE
+    WHEN abstract_norm IN (SELECT abstract_norm FROM meaningfully_abstracted) THEN abstract_norm
+  END AS abstract_norm,
   last_names_norm
-from {{ staging_dataset }}.all_metadata_norm
+FROM {{ staging_dataset }}.all_metadata_norm

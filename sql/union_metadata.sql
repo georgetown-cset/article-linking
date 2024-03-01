@@ -1,44 +1,87 @@
 -- glue all the metadata together into one table
-with meta as (
-  select cast(id as string) as id, title, abstract, clean_doi, cast(year as int64) as year, last_names,
-    null as references, "arxiv" as dataset
-    from {{staging_dataset}}.arxiv_metadata
+WITH meta AS (
+  SELECT
+    cast(id AS STRING) AS id,
+    title,
+    abstract,
+    clean_doi,
+    cast(year AS INT64) AS year,
+    last_names,
+    NULL AS references, --noqa: L029
+    "arxiv" AS dataset
+  FROM {{ staging_dataset }}.arxiv_metadata
   UNION ALL
-  select cast(id as string) as id, title, abstract, clean_doi, cast(year as int64) as year, last_names,
-    references, "wos" as dataset
-    from {{staging_dataset}}.wos_metadata
+  SELECT
+    cast(id AS STRING) AS id,
+    title,
+    abstract,
+    clean_doi,
+    cast(year AS INT64) AS year,
+    last_names,
+    references,
+    "wos" AS dataset
+  FROM {{ staging_dataset }}.wos_metadata
   UNION ALL
-  select cast(id as string) as id, title, abstract, null as clean_doi, cast(year as int64) as year, last_names,
-    null as references, "pwc" as dataset
-  from {{staging_dataset}}.papers_with_code_metadata
+  SELECT
+    cast(id AS STRING) AS id,
+    title,
+    abstract,
+    NULL AS clean_doi,
+    cast(year AS INT64) AS year,
+    last_names,
+    NULL AS references, --noqa: L029
+    "pwc" AS dataset
+  FROM {{ staging_dataset }}.papers_with_code_metadata
   UNION ALL
-  select id, title, abstract, clean_doi, year, last_names,
-    references, "openalex" as dataset
-  from {{staging_dataset}}.openalex_metadata
-  UNION ALL
-  select id, title, abstract, clean_doi, year, last_names,
-    references, "s2" as dataset
-  from {{staging_dataset}}.s2_metadata
-  UNION ALL
-  select id, title, abstract, clean_doi, year, last_names,
-    references, "lens" as dataset
-  from {{staging_dataset}}.lens_metadata
-),
--- add merged id refs
-mapped_references as (
-  select
+  SELECT
     id,
-    array_to_string(array_agg(distinct merged_id order by merged_id), ",") as references
-  from
+    title,
+    abstract,
+    clean_doi,
+    year,
+    last_names,
+    references,
+    "openalex" AS dataset
+  FROM {{ staging_dataset }}.openalex_metadata
+  UNION ALL
+  SELECT
+    id,
+    title,
+    abstract,
+    clean_doi,
+    year,
+    last_names,
+    references,
+    "s2" AS dataset
+  FROM {{ staging_dataset }}.s2_metadata
+  UNION ALL
+  SELECT
+    id,
+    title,
+    abstract,
+    clean_doi,
+    year,
+    last_names,
+    references,
+    "lens" AS dataset
+  FROM {{ staging_dataset }}.lens_metadata
+),
+
+-- add merged id refs
+mapped_references AS (
+  SELECT
+    id,
+    array_to_string(array_agg(DISTINCT merged_id ORDER BY merged_id), ",") AS references --noqa: L029
+  FROM
     meta
-  cross join unnest(split(references, ",")) as orig_id_ref
-    inner join
+  CROSS JOIN unnest(split(references, ",")) AS orig_id_ref
+  INNER JOIN
     {{ production_dataset }}.sources
-  on orig_id_ref = orig_id
-  group by id
+    ON orig_id_ref = orig_id
+  GROUP BY id
 )
 
-select
+SELECT
   id,
   title,
   abstract,
@@ -47,10 +90,10 @@ select
   last_names,
   references,
   dataset
-from
+FROM
   meta
-union all
-select
+UNION ALL
+SELECT
   id,
   title,
   abstract,
@@ -59,9 +102,9 @@ select
   last_names,
   mapped_references.references,
   dataset
-from
+FROM
   meta
-inner join
+INNER JOIN
   mapped_references
-using(id)
-where array_length(split(meta.references, ",")) = array_length(split(mapped_references.references, ","))
+  USING (id)
+WHERE array_length(split(meta.references, ",")) = array_length(split(mapped_references.references, ","))

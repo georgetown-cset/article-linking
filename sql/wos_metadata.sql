@@ -8,30 +8,35 @@ SELECT
   d.last_names,
   e.references
 FROM
-  {{staging_dataset}}.wos_ids ids
+  {{ staging_dataset }}.wos_ids AS ids
 LEFT JOIN
-  {{staging_dataset}}.wos_pubyears a
-ON
-  ids.id = a.id
+  {{ staging_dataset }}.wos_pubyears AS a
+  ON
+    ids.id = a.id
 LEFT JOIN
-  {{staging_dataset}}.wos_titles b
-ON
-  ids.id = b.id
+  {{ staging_dataset }}.wos_titles AS b
+  ON
+    ids.id = b.id
 LEFT JOIN
-  {{staging_dataset}}.wos_abstracts c
-ON
-  ids.id = c.id
+  {{ staging_dataset }}.wos_abstracts AS c
+  ON
+    ids.id = c.id
 LEFT JOIN
-  {{staging_dataset}}.wos_authors d
-ON
-  ids.id = d.id
+  {{ staging_dataset }}.wos_authors AS d
+  ON
+    ids.id = d.id
 LEFT JOIN
-  (select id, string_agg(ref_id order by ref_id) as references
-  from gcp_cset_clarivate.wos_references_latest group by id) e
-ON
-  ids.id = e.id
+  (SELECT
+    id,
+    string_agg(ref_id ORDER BY ref_id) AS references --noqa: L029
+    FROM gcp_cset_clarivate.wos_references_latest GROUP BY id) AS e
+  ON
+    ids.id = e.id
 LEFT JOIN
-  (select id, lower(identifier_value) as clean_doi from gcp_cset_clarivate.wos_dynamic_identifiers_latest where
-    (identifier_type="doi") and (identifier_value is not null)) f
-ON
-  ids.id = f.id
+  (SELECT
+    id,
+    lower(identifier_value) AS clean_doi
+    FROM gcp_cset_clarivate.wos_dynamic_identifiers_latest WHERE
+      (identifier_type = "doi") AND (identifier_value IS NOT NULL)) AS f
+  ON
+    ids.id = f.id

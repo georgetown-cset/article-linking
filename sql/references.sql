@@ -12,23 +12,23 @@ WITH references AS (
     UNNEST(SPLIT(references, ",")) AS reference
   WHERE
     reference IN (
-    SELECT
-      orig_id
-    FROM
-      {{ staging_dataset }}.sources )
+      SELECT orig_id
+      FROM
+        {{ staging_dataset }}.sources )
 )
-SELECT
-  DISTINCT referencing_papers.merged_id AS merged_id,
+
+SELECT DISTINCT
+  referencing_papers.merged_id AS merged_id,
   referenced_papers.merged_id AS ref_id
 FROM references
 LEFT JOIN
   {{ staging_dataset }}.sources AS referencing_papers
-ON
-references.id = referencing_papers.orig_id
+  ON
+    references.id = referencing_papers.orig_id
 LEFT JOIN
   {{ staging_dataset }}.sources AS referenced_papers
-ON
-references.reference = referenced_papers.orig_id
+  ON
+    references.reference = referenced_papers.orig_id
 WHERE
   (referencing_papers.merged_id IS NOT NULL)
   AND (referenced_papers.merged_id IS NOT NULL)

@@ -1,13 +1,13 @@
 -- get arxiv metadata used for matching
-select
-  p.id,
-  p.title,
-  p.abstract,
-  lower(p.doi) as clean_doi,
-  extract(year from p.created) as year,
+SELECT
+  arxiv_metadata_latest.id,
+  arxiv_metadata_latest.title,
+  arxiv_metadata_latest.abstract,
+  lower(arxiv_metadata_latest.doi) AS clean_doi,
+  extract(YEAR FROM arxiv_metadata_latest.created) AS year,
   a.last_names,
-  null as references -- arxiv doesn't have references
-from gcp_cset_arxiv_metadata.arxiv_metadata_latest p
-left join
-{{staging_dataset}}.arxiv_authors a
-on a.id = p.id
+  NULL AS references  --noqa: L029
+FROM gcp_cset_arxiv_metadata.arxiv_metadata_latest
+LEFT JOIN
+  {{ staging_dataset }}.arxiv_authors AS a
+  ON a.id = arxiv_metadata_latest.id

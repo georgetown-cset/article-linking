@@ -3,17 +3,24 @@ import copy
 import json
 import re
 import unicodedata
-import apache_beam as beam
-
-from apache_beam.options.pipeline_options import PipelineOptions
-from gensim.parsing.preprocessing import *
-from gensim.utils import deaccent
 from typing import Iterable
+
+import apache_beam as beam
+from apache_beam.options.pipeline_options import PipelineOptions
+from gensim.parsing.preprocessing import (
+    preprocess_string,
+    strip_non_alphanum,
+    strip_numeric,
+    strip_punctuation,
+    strip_tags,
+)
+from gensim.utils import deaccent
 
 """
 This script normalizes string fields as needed for matching. The resulting normalized data should only be used for
 matching purposes as it does not contain whitespace!
 """
+
 
 class Scrub(beam.DoFn):
     """
@@ -49,13 +56,21 @@ class Scrub(beam.DoFn):
         """
         if value_to_clean is None:
             return None
-        cleaning_functions = [lambda x: unicodedata.normalize("NFKC", x), deaccent, strip_tags]
+        cleaning_functions = [
+            lambda x: unicodedata.normalize("NFKC", x),
+            deaccent,
+            strip_tags,
+        ]
         if field == "abstract":
             cleaning_functions.append(self.strip_copyright)
         cleaning_functions += [strip_punctuation, strip_numeric, strip_non_alphanum]
         if field in ["last_names", "last_name"]:
             # text is a list, make it into a string
-            last_names = [x.strip().split()[-1].lower() for x in value_to_clean if len(x.split()) > 0]
+            last_names = [
+                x.strip().split()[-1].lower()
+                for x in value_to_clean
+                if len(x.split()) > 0
+            ]
             value_to_clean = " ".join(sorted(last_names))
         clean_string_parts = preprocess_string(value_to_clean, cleaning_functions)
         return [x.strip().lower() for x in clean_string_parts]
@@ -86,13 +101,17 @@ class Scrub(beam.DoFn):
             elif field in ["title", "abstract", "last_name", "last_names"]:
                 cleaned = self.clean_text_data(js[field], field)
                 delimiter = "" if field in ["title", "abstract"] else " "
-                clean_record[field+"_norm"] = delimiter.join(cleaned) if cleaned else None
+                clean_record[field + "_norm"] = (
+                    delimiter.join(cleaned) if cleaned else None
+                )
             else:
-                raise ValueError(field+" is not supported by clean_corpus")
+                raise ValueError(field + " is not supported by clean_corpus")
         yield json.dumps(clean_record)
 
 
-def run_pipeline(input_dir: str, output_dir: str, fields_to_clean: list, pipeline_args: list) -> None:
+def run_pipeline(
+    input_dir: str, output_dir: str, fields_to_clean: list, pipeline_args: list
+) -> None:
     """
     Run a beam pipeline that cleans all records within all files in input_dir
     :param input_dir: Directory of jsonl files to clean. Can be local or gcs
@@ -102,20 +121,25 @@ def run_pipeline(input_dir: str, output_dir: str, fields_to_clean: list, pipelin
     :return: None
     """
     with beam.Pipeline(options=PipelineOptions(pipeline_args)) as p:
-        (p | "Read from Text" >> beam.io.ReadFromText(input_dir)
+        (
+            p
+            | "Read from Text" >> beam.io.ReadFromText(input_dir)
             | "Scrub Text" >> beam.ParDo(Scrub(fields_to_clean))
-            | "Write to Text" >> beam.io.WriteToText(output_dir))
+            | "Write to Text" >> beam.io.WriteToText(output_dir)
+        )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_dir", required=True)
     parser.add_argument("--output_dir", required=True)
-    parser.add_argument("--fields_to_clean", required=True,
-                        help="comma-separated list of fields that should be cleaned within each record")
+    parser.add_argument(
+        "--fields_to_clean",
+        required=True,
+        help="comma-separated list of fields that should be cleaned within each record",
+    )
     args, pipeline_args = parser.parse_known_args()
 
-    run_pipeline(args.input_dir, args.output_dir, args.fields_to_clean.split(","), pipeline_args)
-
-
-
+    run_pipeline(
+        args.input_dir, args.output_dir, args.fields_to_clean.split(","), pipeline_args
+    )

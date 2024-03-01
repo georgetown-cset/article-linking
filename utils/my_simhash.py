@@ -3,12 +3,12 @@
 # it has some logging which was overwhelming airflow removed
 from __future__ import division, unicode_literals
 
-import re
-import sys
+import collections
 import hashlib
 import logging
 import numbers
-import collections
+import re
+import sys
 from itertools import groupby
 
 if sys.version_info[0] >= 3:
@@ -22,17 +22,14 @@ def _hashfunc(x):
 
 
 class Simhash(object):
-
-    def __init__(
-            self, value, f=64, reg=r'[\w\u4e00-\u9fcc]+', hashfunc=None, log=None
-    ):
+    def __init__(self, value, f=64, reg=r"[\w\u4e00-\u9fcc]+", hashfunc=None, log=None):
         """
         `f` is the dimensions of fingerprints
 
         `reg` is meaningful only when `value` is basestring and describes
         what is considered to be a letter inside parsed string. Regexp
         object can also be specified (some attempt to handle any letters
-        is to specify reg=re.compile(r'\w', re.UNICODE))
+        is to specify reg=re.compile(r'\w', re.UNICODE)) # noqa: W605
 
         `hashfunc` accepts a utf-8 encoded string and returns a unsigned
         integer in at least `f` bits.
@@ -61,7 +58,7 @@ class Simhash(object):
         elif isinstance(value, numbers.Integral):
             self.value = value
         else:
-            raise Exception('Bad parameter with type {}'.format(type(value)))
+            raise Exception("Bad parameter with type {}".format(type(value)))
 
     def __eq__(self, other):
         """
@@ -72,17 +69,17 @@ class Simhash(object):
         return self.value == other.value
 
     def _slide(self, content, width=4):
-        return [content[i:i + width] for i in range(max(len(content) - width + 1, 1))]
+        return [content[i : i + width] for i in range(max(len(content) - width + 1, 1))]
 
     def _tokenize(self, content):
         content = content.lower()
-        content = ''.join(re.findall(self.reg, content))
+        content = "".join(re.findall(self.reg, content))
         ans = self._slide(content)
         return ans
 
     def build_by_text(self, content):
         features = self._tokenize(content)
-        features = {k:sum(1 for _ in g) for k, g in groupby(sorted(features))}
+        features = {k: sum(1 for _ in g) for k, g in groupby(sorted(features))}
         return self.build_by_features(features)
 
     def build_by_features(self, features):
@@ -97,16 +94,16 @@ class Simhash(object):
             features = features.items()
         for f in features:
             if isinstance(f, basestring):
-                h = self.hashfunc(f.encode('utf-8'))
+                h = self.hashfunc(f.encode("utf-8"))
                 w = 1
             else:
                 assert isinstance(f, collections.Iterable)
-                h = self.hashfunc(f[0].encode('utf-8'))
+                h = self.hashfunc(f[0].encode("utf-8"))
                 w = f[1]
             for i in range(self.f):
                 v[i] += w if h & masks[i] else -w
         # use reversed binary str to keep the backward compatibility
-        binary_str = ''.join(['0' if i <= 0 else '1' for i in v[::-1]])
+        binary_str = "".join(["0" if i <= 0 else "1" for i in v[::-1]])
         self.value = int(binary_str, 2)
 
     def distance(self, another):
@@ -120,7 +117,6 @@ class Simhash(object):
 
 
 class SimhashIndex(object):
-
     def __init__(self, objs, f=64, k=2, log=None):
         """
         `objs` is a list of (obj_id, simhash)
@@ -137,13 +133,13 @@ class SimhashIndex(object):
         else:
             self.log = log
 
-        self.log.info('Initializing %s data.', count)
+        self.log.info("Initializing %s data.", count)
 
         self.bucket = collections.defaultdict(set)
 
         for i, q in enumerate(objs):
             if i % 10000 == 0 or i == count - 1:
-                self.log.info('%s/%s', i + 1, count)
+                self.log.info("%s/%s", i + 1, count)
 
             self.add(*q)
 
@@ -158,12 +154,12 @@ class SimhashIndex(object):
 
         for key in self.get_keys(simhash):
             dups = self.bucket[key]
-            self.log.debug('key:%s', key)
-#            if len(dups) > 200:
-#                self.log.warning('Big bucket found. key:%s, len:%s', key, len(dups))
+            self.log.debug("key:%s", key)
+            #            if len(dups) > 200:
+            #                self.log.warning('Big bucket found. key:%s, len:%s', key, len(dups))
 
             for dup in dups:
-                sim2, obj_id = dup.split(',', 1)
+                sim2, obj_id = dup.split(",", 1)
                 sim2 = Simhash(long(sim2, 16), self.f)
 
                 d = simhash.distance(sim2)
@@ -179,7 +175,7 @@ class SimhashIndex(object):
         assert simhash.f == self.f
 
         for key in self.get_keys(simhash):
-            v = '%x,%s' % (simhash.value, obj_id)
+            v = "%x,%s" % (simhash.value, obj_id)
             self.bucket[key].add(v)
 
     def delete(self, obj_id, simhash):
@@ -190,7 +186,7 @@ class SimhashIndex(object):
         assert simhash.f == self.f
 
         for key in self.get_keys(simhash):
-            v = '%x,%s' % (simhash.value, obj_id)
+            v = "%x,%s" % (simhash.value, obj_id)
             if v in self.bucket[key]:
                 self.bucket[key].remove(v)
 
@@ -208,7 +204,7 @@ class SimhashIndex(object):
             else:
                 m = 2 ** (self.offsets[i + 1] - offset) - 1
             c = simhash.value >> offset & m
-            yield '%x:%x' % (c, i)
+            yield "%x:%x" % (c, i)
 
     def bucket_size(self):
         return len(self.bucket)

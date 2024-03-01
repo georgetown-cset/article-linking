@@ -1,2 +1,5 @@
 -- get wos publication year
-select id, pubyear as year from gcp_cset_clarivate.wos_summary_latest
+SELECT
+  id,
+  pubyear AS year
+FROM gcp_cset_clarivate.wos_summary_latest
