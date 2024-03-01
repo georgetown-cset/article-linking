@@ -3,23 +3,11 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
-from dataloader.airflow_utils.slack import task_fail_slack_alert
-
-default_args = {
-    "owner": "airflow",
-    "depends_on_past": False,
-    "start_date": datetime(2022, 3, 5),
-    "email": ["jennifer.melot@georgetown.edu"],
-    "email_on_failure": True,
-    "email_on_retry": True,
-    "retries": 0,
-    "retry_delay": timedelta(minutes=5),
-    "on_failure_callback": task_fail_slack_alert,
-}
+from dataloader.airflow_utils.defaults import get_default_args
 
 with DAG(
     "org_er_and_metadata_merge",
-    default_args=default_args,
+    default_args=get_default_args(pocs=["Jennifer"]),
     description="Triggers Org ER and metadata merge dags",
     schedule_interval=None,
     catchup=False,

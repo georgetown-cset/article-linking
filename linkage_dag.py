@@ -41,10 +41,12 @@ from dataloader.scripts.populate_documentation import update_table_descriptions
 
 production_dataset = "literature"
 staging_dataset = f"staging_{production_dataset}"
+args = get_default_args(pocs=["Jennifer"])
+args["retries"] = 1
 
 with DAG(
     "article_linkage_updater",
-    default_args=get_default_args(),
+    default_args=args,
     description="Links articles across our scholarly lit holdings.",
     schedule_interval=None,
     user_defined_macros={
@@ -327,6 +329,18 @@ with DAG(
             destination_cloud_storage_uris=f"gs://{bucket}/{tmp_dir}/lid_input/lid_input*.jsonl",
             export_format="NEWLINE_DELIMITED_JSON",
         ),
+        BigQueryToGCSOperator(
+            task_id="export_unlink",
+            source_project_dataset_table=f"{staging_dataset}.unlink",
+            destination_cloud_storage_uris=f"gs://{bucket}/{tmp_dir}/unlink/data*.jsonl",
+            export_format="NEWLINE_DELIMITED_JSON",
+        ),
+        BigQueryToGCSOperator(
+            task_id="export_ids_to_drop",
+            source_project_dataset_table=f"{staging_dataset}.ids_to_drop",
+            destination_cloud_storage_uris=f"gs://{bucket}/{tmp_dir}/ids_to_drop/data*.jsonl",
+            export_format="NEWLINE_DELIMITED_JSON",
+        ),
     ]
 
     # Start up godzilla of article linkage, update simhash indexes of title+abstract, run simhash, then create the
@@ -353,6 +367,8 @@ with DAG(
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/simhash_input .",
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{gcs_folder}/simhash_indexes .",
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{gcs_folder}/simhash_results .",
+        f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/unlink .",
+        f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/ids_to_drop .",
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/prev_id_mapping .",
         "mkdir new_simhash_indexes",
     ]
