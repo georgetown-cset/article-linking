@@ -571,9 +571,9 @@ with DAG(
     ) as f:
         table_desc = json.loads(f.read())
 
-    trigger_org_er_and_metadata_merge = TriggerDagRunOperator(
-        task_id="trigger_org_er_and_metadata_merge",
-        trigger_dag_id="org_er_and_metadata_merge",
+    trigger_org_fixes = TriggerDagRunOperator(
+        task_id="trigger_org_fixes",
+        trigger_dag_id="org_fixes",
     )
 
     for table in production_tables:
@@ -606,7 +606,7 @@ with DAG(
             >> snapshot
             >> pop_descriptions
             >> success_alert
-            >> trigger_org_er_and_metadata_merge
+            >> trigger_org_fixes
         )
 
     # We don't show the "all metadata" table in the production dataset, but we do need to
