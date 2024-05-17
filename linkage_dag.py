@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 
 from airflow import DAG
-from airflow.lineage.entities import File
+from airflow.composer.data_lineage.entities import BigQueryTable
 from airflow.operators.bash import BashOperator
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.python import PythonOperator
@@ -399,18 +399,32 @@ with DAG(
         # but I think just reporting them all on this task is ok since `update_simhash_index` doesn't update any files
         # outside the VM it runs on and this task depends on all of these things, directly or indirectly
         inlets=[
-            File(url=f"gcs:{bucket}.{tmp_dir}/article_pairs/*"),
-            File(url=f"gcs:{bucket}.{tmp_dir}/simhash_input/*"),
-            File(url=f"gcs:{bucket}.{gcs_folder}/simhash_indexes/*"),
-            File(url=f"gcs:{bucket}.{gcs_folder}/simhash_results/*"),
-            File(url=f"gcs:{bucket}.{tmp_dir}/unlink/*"),
-            File(url=f"gcs:{bucket}.{tmp_dir}/ids_to_drop/data*.jsonl"),
-            File(url=f"gcs:{bucket}.{tmp_dir}/prev_id_mapping/*"),
+            BigQueryTable(
+                project_id=project_id, dataset_id=production_dataset, table_id="sources"
+            ),
+            BigQueryTable(
+                project_id=project_id,
+                dataset_id=staging_dataset,
+                table_id="all_match_pairs_with_um",
+            ),
+            BigQueryTable(
+                project_id=project_id,
+                dataset_id=staging_dataset,
+                table_id="simhash_input",
+            ),
+            BigQueryTable(
+                project_id=project_id, dataset_id=staging_dataset, table_id="unlink"
+            ),
+            BigQueryTable(
+                project_id=project_id,
+                dataset_id=staging_dataset,
+                table_id="ids_to_drop",
+            ),
         ],
         outlets=[
-            File(url=f"gcs:{bucket}.{tmp_dir}/id_mapping.jsonl"),
-            File(url=f"gcs:{bucket}.{gcs_folder}/simhash_results/*"),
-            File(url=f"gcs:{bucket}.{gcs_folder}/simhash_indexes/*"),
+            BigQueryTable(
+                project_id=project_id, dataset_id=staging_dataset, table_id="id_mapping"
+            ),
         ],
     )
 
@@ -443,8 +457,18 @@ with DAG(
             "fields_to_lid": "title,abstract",
             "region": "us-east1",
         },
-        inlets=[File(url=f"gcs:{bucket}.{tmp_dir}/lid_input/lid_input*")],
-        outlets=[File(url=f"gcs:{bucket}.{tmp_dir}/lid_output/lid*")],
+        inlets=[
+            BigQueryTable(
+                project_id=project_id, dataset_id=staging_dataset, table_id="lid_input"
+            )
+        ],
+        outlets=[
+            BigQueryTable(
+                project_id=project_id,
+                dataset_id=staging_dataset,
+                table_id="all_metadata_with_cld2_lid",
+            )
+        ],
     )
 
     # turn off the expensive godzilla of article linkage when we're done with it, then import the id mappings and
