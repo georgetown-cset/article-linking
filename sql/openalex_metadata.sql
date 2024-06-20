@@ -38,4 +38,6 @@ WHERE
   OR NOT (type IN ("dataset",
       "peer-review",
       "grant",
-      "supplementary-materials"))
+      "supplementary-materials",
+      "editorial",
+      "letter"))
