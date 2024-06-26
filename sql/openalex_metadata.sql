@@ -37,4 +37,7 @@ WHERE
   (type IS NULL)
   OR NOT (type IN ("dataset",
       "peer-review",
-      "grant"))
+      "grant",
+      "supplementary-materials",
+      "editorial",
+      "letter"))
