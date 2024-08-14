@@ -139,8 +139,10 @@ def create_match_keys(
     :param prev_id_mapping_dir: optional dir containing previous id mappings in jsonl form
     :return: None
     """
+    print("Creating merged ids")
     with open(match_file, mode="w") as out:
         prev_orig_to_merg = {}
+        merg_to_orig = {}
         max_merg = "carticle_0"
         if prev_id_mapping_dir is not None:
             for fi in os.listdir(prev_id_mapping_dir):
@@ -151,6 +153,9 @@ def create_match_keys(
                         merg_id = js["merged_id"]
                         assert orig_id not in prev_orig_to_merg
                         prev_orig_to_merg[orig_id] = merg_id
+                        if merg_id not in merg_to_orig:
+                            merg_to_orig[merg_id] = set()
+                        merg_to_orig[merg_id].add(orig_id)
                         if merg_id > max_merg:
                             max_merg = merg_id
         ignore_ids = set()
@@ -171,6 +176,10 @@ def create_match_keys(
             )
             if len(existing_ids) == 1 and list(existing_ids)[0] not in ignore_ids:
                 cset_article_id = existing_ids.pop()
+            # In some cases, merged ids can "split apart", if their constituent articles no longer
+            # match. We'll detect this case by checking whether the old set of articles assigned to
+            # this merged id contain any entries missing from our current set
+            if cset_article_id and (len(merg_to_orig[cset_article_id] - set(ms)) == 0):
                 num_old += 1
             else:
                 cset_article_id = create_cset_article_id(match_id)
