@@ -315,7 +315,7 @@ with DAG(
         BigQueryToGCSOperator(
             task_id="export_article_pairs",
             source_project_dataset_table=f"{staging_dataset}.all_match_pairs_with_um",
-            destination_cloud_storage_uris=f"gs://{bucket}/{tmp_dir}/article_pairs/article_pairs*.jsonl",
+            destination_cloud_storage_uris=f"gs://{bucket}/{tmp_dir}/exact_matches/article_pairs*.jsonl",
             export_format="NEWLINE_DELIMITED_JSON",
         ),
         BigQueryToGCSOperator(
@@ -364,7 +364,7 @@ with DAG(
         "rm -rf current_ids",
         "mkdir input_data",
         "mkdir current_ids",
-        f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/article_pairs .",
+        f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/exact_matches .",
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/simhash_input .",
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{gcs_folder}/simhash_indexes .",
         f"/snap/bin/gsutil -m cp -r gs://{bucket}/{gcs_folder}/simhash_results .",
@@ -483,7 +483,7 @@ with DAG(
     import_id_mapping = GCSToBigQueryOperator(
         task_id="import_id_mapping",
         bucket=bucket,
-        source_objects=[f"{tmp_dir}/id_mapping.jsonl"],
+        source_objects=[f"{tmp_dir}/new_id_mappings/*"],
         schema_object=f"{schema_dir}/id_mapping.json",
         destination_project_dataset_table=f"{staging_dataset}.id_mapping",
         source_format="NEWLINE_DELIMITED_JSON",
