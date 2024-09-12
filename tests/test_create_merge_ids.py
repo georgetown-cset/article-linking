@@ -6,7 +6,6 @@ import unittest
 from utils.create_merge_ids import create_match_sets, create_matches
 
 static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
-empty_simhash_dir = os.path.join(static_dir, "simhash_empty")
 
 
 class TestGetCombinedMap(unittest.TestCase):
@@ -16,30 +15,22 @@ class TestGetCombinedMap(unittest.TestCase):
     def test_get_combined_map1(self):
         match_dir = os.path.join(static_dir, "test_get_combined_map1")
         expected_result = [{"A", "B", "C"}]
-        self.assertEqual(
-            create_match_sets(match_dir, empty_simhash_dir), expected_result
-        )
+        self.assertEqual(create_match_sets(match_dir), expected_result)
 
     def test_get_combined_map2(self):
         match_dir = os.path.join(static_dir, "test_get_combined_map2")
         expected_result = [{"A", "B", "C", "D"}]
-        self.assertEqual(
-            create_match_sets(match_dir, empty_simhash_dir), expected_result
-        )
+        self.assertEqual(create_match_sets(match_dir), expected_result)
 
     def test_get_combined_map3(self):
         match_dir = os.path.join(static_dir, "test_get_combined_map3")
         expected_result = [{"A", "B", "C", "D", "E"}]
-        self.assertEqual(
-            create_match_sets(match_dir, empty_simhash_dir), expected_result
-        )
+        self.assertEqual(create_match_sets(match_dir), expected_result)
 
     def test_get_combined_map4(self):
         match_dir = os.path.join(static_dir, "test_get_combined_map4")
         expected_result = [{"A", "B", "C", "D", "E", "F", "G", "H"}]
-        self.assertEqual(
-            create_match_sets(match_dir, empty_simhash_dir), expected_result
-        )
+        self.assertEqual(create_match_sets(match_dir), expected_result)
 
     def test_get_combined_map5(self):
         # test with two disconnected sets
@@ -49,43 +40,19 @@ class TestGetCombinedMap(unittest.TestCase):
         expected_result = sorted(
             [result_set_small, result_set_large], key=lambda k: len(k)
         )
-        actual_result = sorted(
-            create_match_sets(match_dir, empty_simhash_dir), key=lambda k: len(k)
-        )
-        self.assertEqual(actual_result, expected_result)
-
-    def test_get_match_sets_with_extra_id(self):
-        # test with three disconnected sets. The set A - E will have one simhash match (E-A) that should be included,
-        # and matches involving the obsolete id D that should be filtered. The "small" set F-H contains simhash-only
-        # ids and should be filtered. The other small set I-J should be included.
-        match_dir = os.path.join(
-            static_dir, "test_get_match_sets_with_extra_id", "match_pairs"
-        )
-        simhash_match_dir = os.path.join(
-            static_dir, "test_get_match_sets_with_extra_id", "simhash_match_pairs"
-        )
-        result_set_large = {"A", "B", "C", "E"}
-        result_set_small = {"I", "J"}
-        expected_result = sorted(
-            [result_set_small, result_set_large], key=lambda k: len(k)
-        )
-        actual_result = sorted(
-            create_match_sets(match_dir, simhash_match_dir), key=lambda k: len(k)
-        )
+        actual_result = sorted(create_match_sets(match_dir), key=lambda k: len(k))
         self.assertEqual(actual_result, expected_result)
 
     def test_skip_matches(self):
         # test without matches excluded
         match_dir = os.path.join(static_dir, "test_skip_matches_ids")
         expected_result_no_excludes = [{"A", "B", "C"}, {"D", "E"}]
-        self.assertEqual(
-            create_match_sets(match_dir, empty_simhash_dir), expected_result_no_excludes
-        )
+        self.assertEqual(create_match_sets(match_dir), expected_result_no_excludes)
         # test with matches excluded
         exclude_dir = os.path.join(static_dir, "test_skip_matches_ids_to_skip")
         expected_result_excludes = [{"A", "B"}, {"C"}, {"D"}, {"E"}]
         self.assertEqual(
-            create_match_sets(match_dir, empty_simhash_dir, exclude_dir=exclude_dir),
+            create_match_sets(match_dir, exclude_dir=exclude_dir),
             expected_result_excludes,
         )
 

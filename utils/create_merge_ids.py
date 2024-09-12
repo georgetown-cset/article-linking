@@ -61,15 +61,11 @@ def get_exclude_matches(exclude_dir: str) -> dict:
     return dont_match
 
 
-def create_match_sets(
-    exact_match_dir: str, simhash_match_dir: str, exclude_dir: str = None
-) -> list:
+def create_match_sets(match_dir: str, exclude_dir: str = None) -> list:
     """
     Given a directory of exported jsonl files containing article matches, generates a list of sets of matched articles,
-    including "transitive matches". We will use the ids present in the exact matches to filter the simhash matches,
-    since it's possible for obsolete ids to live on in the simhash index
-    :param exact_match_dir: directory of jsonls containing matched orig_ids from exact metadata match
-    :param simhash_match_dir: directory of jsonls containing matched orig_ids from simhash
+    including "transitive matches".
+    :param match_dir: directory of jsonls containing matched orig_ids from exact metadata match
     :param exclude_dir: directory of jsonl files containing article pairs that should not be matched together
     :return: list of sets of matched articles
     """
@@ -77,26 +73,22 @@ def create_match_sets(
     dont_match = get_exclude_matches(exclude_dir)
     print("getting adjacency lists")
     adj_list = {}
-    for match_dir, is_simhash in [(exact_match_dir, False), (simhash_match_dir, True)]:
-        for fi in os.listdir(match_dir):
-            with open(os.path.join(match_dir, fi)) as f:
-                for line in f:
-                    js = json.loads(line)
-                    key1 = js["id1"]
-                    key2 = js["id2"]
-                    if is_simhash:
-                        if (key1 not in adj_list) or (key2 not in adj_list):
-                            continue
-                    if key1 not in adj_list:
-                        adj_list[key1] = set()
-                    if key2 not in dont_match.get(key1, set()):
-                        adj_list[key1].add(key2)
-                    # even if we're in a scenario where (according to a changed metric) A matches B but B doesn't match A,
-                    # this will ensure they get added to the same match set
-                    if key2 not in adj_list:
-                        adj_list[key2] = set()
-                    if key1 not in dont_match.get(key2, set()):
-                        adj_list[key2].add(key1)
+    for fi in os.listdir(match_dir):
+        with open(os.path.join(match_dir, fi)) as f:
+            for line in f:
+                js = json.loads(line)
+                key1 = js["id1"]
+                key2 = js["id2"]
+                if key1 not in adj_list:
+                    adj_list[key1] = set()
+                if key2 not in dont_match.get(key1, set()):
+                    adj_list[key1].add(key2)
+                # even if we're in a scenario where (according to a changed metric) A matches B but B doesn't match A,
+                # this will ensure they get added to the same match set
+                if key2 not in adj_list:
+                    adj_list[key2] = set()
+                if key1 not in dont_match.get(key2, set()):
+                    adj_list[key2].add(key1)
     print("getting connected articles")
     seen_ids = set()
     match_sets = []
@@ -178,13 +170,13 @@ def create_matches(
     yield batch, batch_count
 
 
-def write_batch(match_batch: tuple, output_dir: str) -> None:
+def write_batch(match_batch_with_output_dir: tuple) -> None:
     """
     Write a batch of matches to disk
-    :param match_batch: tuple of a list of jsons containing a merged id and orig id, and an identifier for the batch
-    :param output_dir: directory where matches should be written
+    :param match_batch: tuple of (a tuple containing a list of jsons containing a merged id and orig id, and an identifier for the batch), and a directory where matches should be written
     :return: None
     """
+    match_batch, output_dir = match_batch_with_output_dir
     matches, batch_id = match_batch
     with open(os.path.join(output_dir, f"matches_{batch_id}.jsonl"), "w") as f:
         for match in matches:
@@ -193,7 +185,6 @@ def write_batch(match_batch: tuple, output_dir: str) -> None:
 
 def write_matches(
     exact_match_dir,
-    simhash_match_dir,
     exclude_dir,
     ids_to_drop,
     prev_id_mapping_dir,
@@ -202,19 +193,19 @@ def write_matches(
     """
     Generate merged id-orig id pairs and write them out as a directory of jsonls
     :param exact_match_dir: directory of jsonls containing matched orig_ids from exact metadata match
-    :param simhash_match_dir: directory of jsonls containing matched orig_ids from simhash
     :param exclude_dir: directory of article pairs that should not be matched
     :param ids_to_drop: file containing ids that should not be used
     :param prev_id_mapping_dir: directory of jsonl containing previous mapping between orig ids and merged ids
     :param output_dir: directory where jsonls containing new mappings between orig ids and merged ids should be written
     :return: None
     """
-    match_sets = create_match_sets(exact_match_dir, simhash_match_dir, exclude_dir)
-    match_batches = create_matches(match_sets, ids_to_drop, prev_id_mapping_dir)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     with multiprocessing.Pool() as p:
-        p.starmap(write_batch, ((mb, output_dir) for mb in match_batches))
+        match_sets = create_match_sets(exact_match_dir, exclude_dir)
+        match_batches = create_matches(match_sets, ids_to_drop, prev_id_mapping_dir)
+        output_batches = ((mb, output_dir) for mb in match_batches)
+        list(p.imap(write_batch, output_batches))
 
 
 if __name__ == "__main__":
@@ -223,11 +214,6 @@ if __name__ == "__main__":
         "--exact_match_dir",
         required=True,
         help="directory of jsonls containing matched orig_ids from exact metadata match",
-    )
-    parser.add_argument(
-        "--simhash_match_dir",
-        required=True,
-        help="directory of jsonls containing matched orig_ids from simhash",
     )
     parser.add_argument(
         "--exclude_dir",
@@ -253,7 +239,6 @@ if __name__ == "__main__":
 
     write_matches(
         args.exact_match_dir,
-        args.simhash_match_dir,
         args.exclude_dir,
         args.ids_to_drop,
         args.prev_id_mapping_dir,
