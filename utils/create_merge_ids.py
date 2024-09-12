@@ -19,7 +19,7 @@ def create_cset_article_id(idx: int):
     return f"carticle_{zero_padding}{idx}"
 
 
-def get_connected_edges(adj_list: dict, key: str) -> set:
+def get_connected_articles(adj_list: dict, key: str) -> set:
     """
     Given a dict where a key-value pair corresponds to an article match and a particular article `key`,
     returns a set of articles matched to `key`.
@@ -27,16 +27,16 @@ def get_connected_edges(adj_list: dict, key: str) -> set:
     :param key: an article to match in `adj_list`
     :return: a set of matched articles
     """
-    conn_edges = {key}
+    conn_articles = {key}
     to_explore = adj_list[key]
     while len(to_explore) > 0:
         v = to_explore.pop()
-        if v not in conn_edges:
-            conn_edges.add(v)
+        if v not in conn_articles:
+            conn_articles.add(v)
             to_explore = to_explore.union(
-                {k for k in adj_list[v] if k not in conn_edges}
+                {k for k in adj_list[v] if k not in conn_articles}
             )
-    return conn_edges
+    return conn_articles
 
 
 def get_exclude_matches(exclude_dir: str) -> dict:
@@ -77,7 +77,6 @@ def create_match_sets(
     dont_match = get_exclude_matches(exclude_dir)
     print("getting adjacency lists")
     adj_list = {}
-    usable_ids = set()
     for match_dir, is_simhash in [(exact_match_dir, False), (simhash_match_dir, True)]:
         for fi in os.listdir(match_dir):
             with open(os.path.join(match_dir, fi)) as f:
@@ -86,11 +85,8 @@ def create_match_sets(
                     key1 = js["id1"]
                     key2 = js["id2"]
                     if is_simhash:
-                        if (key1 not in usable_ids) or (key2 not in usable_ids):
+                        if (key1 not in adj_list) or (key2 not in adj_list):
                             continue
-                    else:
-                        usable_ids.add(key1)
-                        usable_ids.add(key2)
                     if key1 not in adj_list:
                         adj_list[key1] = set()
                     if key2 not in dont_match.get(key1, set()):
@@ -101,13 +97,14 @@ def create_match_sets(
                         adj_list[key2] = set()
                     if key1 not in dont_match.get(key2, set()):
                         adj_list[key2].add(key1)
+    print("getting connected articles")
     seen_ids = set()
     match_sets = []
     for k in adj_list.keys():
         if k in seen_ids:
             continue
         # grab every connected article
-        match_set = get_connected_edges(adj_list, k)
+        match_set = get_connected_articles(adj_list, k)
         for matched_key in match_set:
             seen_ids.add(matched_key)
         match_sets.append(match_set)
