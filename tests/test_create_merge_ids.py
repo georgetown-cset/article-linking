@@ -3,7 +3,7 @@ import os
 import shutil
 import unittest
 
-from utils.create_merge_ids import create_match_keys, create_match_sets
+from utils.create_merge_ids import create_match_sets, create_matches
 
 static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
@@ -43,24 +43,6 @@ class TestGetCombinedMap(unittest.TestCase):
         actual_result = sorted(create_match_sets(match_dir), key=lambda k: len(k))
         self.assertEqual(actual_result, expected_result)
 
-    def test_get_match_sets_with_extra_id(self):
-        # test with three disconnected sets. The set A - E will have one extra id (E) that should get filtered, and
-        # the "small" set F-H will all be extra ids that should be filtered. The other small set I-J will have ids
-        # distributed across two id files, but the set should be included.
-        match_dir = os.path.join(
-            static_dir, "test_get_match_sets_with_extra_id", "match_pairs"
-        )
-        ids_dir = os.path.join(static_dir, "test_get_match_sets_with_extra_id", "ids")
-        result_set_large = {"A", "B", "C", "D"}
-        result_set_small = {"I", "J"}
-        expected_result = sorted(
-            [result_set_small, result_set_large], key=lambda k: len(k)
-        )
-        actual_result = sorted(
-            create_match_sets(match_dir, ids_dir), key=lambda k: len(k)
-        )
-        self.assertEqual(actual_result, expected_result)
-
     def test_skip_matches(self):
         # test without matches excluded
         match_dir = os.path.join(static_dir, "test_skip_matches_ids")
@@ -74,33 +56,46 @@ class TestGetCombinedMap(unittest.TestCase):
             expected_result_excludes,
         )
 
-    def test_create_match_keys(self):
-        # The first set (A, B, C) contains two old elts from the same match set and one new elt; should keep its id.
-        # The next (D, E, F) contains one elt from one match set, two from another; should change ids.
-        # Another (G, H) contains only new ids; should get a new id.
-        # The last two (I and J) are two different match sets that share an old id and are in ids_to_drop;
-        # each should get a new id (this is in case of unlinking).
-        match_sets = [{"A", "B", "C"}, {"D", "E", "F"}, {"G", "H"}, {"I"}, {"J"}]
-        out_dir = os.path.join(static_dir, "test_create_match_keys", "output")
-        if os.path.exists(out_dir):
-            shutil.rmtree(out_dir)
-        os.mkdir(out_dir)
-        out_fi = os.path.join(out_dir, "output.jsonl")
+    def test_create_matches(self):
+        match_sets = [
+            {"A", "B", "C"},
+            {"D", "E", "F"},
+            {"G", "H"},
+            {"I"},
+            {"J"},
+            {"K", "L"},
+            {"M", "N", "O"},
+        ]
         id_mapping_dir = os.path.join(static_dir, "test_create_match_keys", "input")
         ids_to_drop = os.path.join(static_dir, "test_create_match_keys", "ids_to_drop")
         expected_output = [
-            {"orig_id": "A", "merged_id": "carticle_0000000001"},
-            {"orig_id": "B", "merged_id": "carticle_0000000001"},
-            {"orig_id": "C", "merged_id": "carticle_0000000001"},
-            {"orig_id": "D", "merged_id": "carticle_0000000004"},
-            {"orig_id": "E", "merged_id": "carticle_0000000004"},
-            {"orig_id": "F", "merged_id": "carticle_0000000004"},
-            {"orig_id": "G", "merged_id": "carticle_0000000005"},
-            {"orig_id": "H", "merged_id": "carticle_0000000005"},
-            {"orig_id": "I", "merged_id": "carticle_0000000006"},
-            {"orig_id": "J", "merged_id": "carticle_0000000007"},
+            # F was removed from this match set so A B and C should get a new merged id
+            {"orig_id": "A", "merged_id": "carticle_0000000006"},
+            {"orig_id": "B", "merged_id": "carticle_0000000006"},
+            {"orig_id": "C", "merged_id": "carticle_0000000006"},
+            # D, E, F contains one elt from one match set, two from another; should change ids
+            {"orig_id": "D", "merged_id": "carticle_0000000007"},
+            {"orig_id": "E", "merged_id": "carticle_0000000007"},
+            {"orig_id": "F", "merged_id": "carticle_0000000007"},
+            # G, H is a completely new match set with new ids, should get a new id
+            {"orig_id": "G", "merged_id": "carticle_0000000008"},
+            {"orig_id": "H", "merged_id": "carticle_0000000008"},
+            # The last two (I and J) are two different match sets that share an old id and are in ids_to_drop;
+            # each should get a new id
+            {"orig_id": "I", "merged_id": "carticle_0000000009"},
+            {"orig_id": "J", "merged_id": "carticle_0000000010"},
+            # Nothing changed for this match set so the merged id stays the same
+            {"orig_id": "K", "merged_id": "carticle_0000000004"},
+            {"orig_id": "L", "merged_id": "carticle_0000000004"},
+            # This match set got one new article so the merged id stays the same
+            {"orig_id": "M", "merged_id": "carticle_0000000005"},
+            {"orig_id": "N", "merged_id": "carticle_0000000005"},
+            {"orig_id": "O", "merged_id": "carticle_0000000005"},
         ]
         print(expected_output)
-        create_match_keys(match_sets, out_fi, ids_to_drop, id_mapping_dir)
-        out = [json.loads(x) for x in open(out_fi).readlines()]
-        self.assertEqual(expected_output, sorted(out, key=lambda x: x["orig_id"]))
+        match_batches = create_matches(match_sets, ids_to_drop, id_mapping_dir)
+        matches = []
+        for match_batch, batch_id in match_batches:
+            matches.extend(match_batch)
+        print(sorted(matches, key=lambda x: x["orig_id"]))
+        self.assertEqual(expected_output, sorted(matches, key=lambda x: x["orig_id"]))
