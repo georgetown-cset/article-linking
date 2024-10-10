@@ -1,13 +1,29 @@
 # Article Linking
 ![Python application](https://github.com/georgetown-cset/article-linking/workflows/Python%20application/badge.svg)
 
-This repository contains a description and supporting code for CSET's current method of
-cross-dataset article linking. Note that we use "article" very loosely, although in a way that to our knowledge
-is fairly consistent across corpora. Books, for example, are included.
+At CSET, we aim to produce a more comprehensive set of scholarly literature by ingesting multiple sources and then
+deduplicating articles. This repository contains CSET's current method of cross-dataset article linking. Note that we
+use "article" very loosely, although in a way that to our knowledge is fairly consistent across corpora. Books, for
+example, are included. We currently include articles from arXiv, Web of Science, Papers With Code, Semantic Scholar,
+The Lens, and OpenAlex. Some of these sources are largely duplicative (e.g. arXiv is well covered by other corpora)
+but are included to aid in linking to additional metadata (e.g. arXiv fulltext).
 
-For each article in arXiv, WOS, Papers With Code, Semantic Scholar, The Lens, and OpenAlex
-we normalized titles, abstracts, and author last names. For the purpose of matching, we filtered out
-titles, abstracts, and DOIs that occurred more than 10 times in the corpus. We then considered each group of articles
+For more information about the overall merged academic corpus, which is produced using several data pipelines including
+article linkage, see the [ETO documentation](https://eto.tech/dataset-docs/mac/).
+
+## Matching articles
+
+To match articles, we need to extract the data that we want to use in matching and put it in a consistent format. The
+SQL queries specified in the `sequences/generate_{dataset}_data.tsv` files are run in the order they appear in those
+files. For OpenAlex we exclude documents with a `type` of Dataset, Peer Review, or Grant. Additionally, we take every
+combination of the Web of Science titles, abstracts, and pubyear so that a match on any of these combinations will
+result in a match on the shared WOS id. Finally, for Semantic Scholar, we exclude any documents that have a non-null
+publication type that is one of Dataset, Editorial, LettersAndComments, News, or Review.
+
+For each article in arXiv, Web of Science, Papers With Code, Semantic Scholar, The Lens, and OpenAlex
+we [normalized](utils/clean_corpus.py) titles, abstracts, and author last names to remove whitespace, punctuation,
+and other artifacts thought to not be useful for linking. For the purpose of matching, we filtered out titles,
+abstracts, and DOIs that occurred more than 10 times in the corpus. We then considered each group of articles
 within or across datasets that shared at least one of the following (non-null) metadata fields:
 
 *  Normalized title
@@ -20,26 +36,34 @@ as well as a match on one additional field above, or on
 *  Publication year
 *  Normalized author last names
 
-to correspond to one article in the merged dataset. We add to this set "near matches" of the concatenation
-of the normalized title and abstract within a publication year, which we identify using simhash.
+to correspond to one article in the merged dataset. We also [link](sql/all_match_pairs_with_um.sql) articles based on
+vendor-provided cross-dataset links.
 
-To do this, we run the `linkage_dag.py` on airflow. The article linkage runs weekly, triggered by the `scholarly_lit_trigger` dag.
+## Generating merged articles
 
-For an English description of what the dag does, see [the documentation](methods_documentation/overview.md).
+Given a set of articles that have been matched together, we [generate](utils/create_merge_ids.py) a single "merged id"
+that is linked to all the "original" (vendor) ids of those articles. Some points from our implementation:
 
-### How to use the linkage tables (CSET only)
+* If articles that have been seen in a previous run and were previously assigned to different merged ids are now matched
+together, we assign them to a new merged id.
+* If a set of articles previously assigned to a given merged id _loses_ articles (either because it is now assigned to
+a different merged id, or because it has been deleted from one of the input corpora), we give this set of articles a
+new merged id.
+* If a set of articles previously assigned to a given merged id _gains_ articles without losing any old articles, we
+keep the old merged id for these articles.
 
-We have three tables that are most likely to help you use article linkage.
+This implementation is meant to ensure that downstream pipelines (e.g. model inference, canonical metadata assignment)
+always reflect outputs on current metadata for a given merged article regardless of downstream pipeline implementation.
 
-- `gcp_cset_links_v2.article_links` - For each original ID (e.g., from WoS), gives the corresponding CSET ID.
-This is a many-to-one mapping. Please update your scripts to use `gcp_cset_links_v2.article_links_with_dataset`,
-which has an additional column that contains the dataset of the `orig_id`.
+## Automation and output tables
 
-- `gcp_cset_links_v2.all_metadata_with_cld2_lid` - provides CLD2 LID for the titles and abstracts of each
-current version of each article's metadata. You can also use this table to get the metadata used in the
-match for each version of the raw articles. Note that the `id` column is _not_ unique as some corpora like WOS
-have multiple versions of the metadata for different languages.
+We automate article linkage using Apache Airflow. `linkage_dag.py` contains our current implementation.
 
-- `gcp_cset_links_v2.article_merged_metadata` - This maps the CSET `merged_id` to a set of merged metadata.
-The merging method takes the maximum value of each metadata field across each matched article, which may not
-be suitable for your purposes.
+* This dag is triggered from the [Semantic Scholar ETL dag](https://github.com/georgetown-cset/semantic-scholar-etl-pipeline/blob/main/s2_dag.py) which runs once a month.
+* This dag triggers the [Org Fixes dag](https://github.com/georgetown-cset/org-fixes/blob/main/org_fixes_dag.py).
+
+The DAG generates two tables of analytic significance:
+
+* `staging_literature.all_metadata_with_cld2_lid` - captures metadata for all unmerged articles in a
+standard format. It also contains [language ID predictions](utils/run_lid.py) for titles and abstracts based on CLD2.
+* `literature.sources` - contains pairs of merged ids and original (vendor) ids linked to those merged ids.

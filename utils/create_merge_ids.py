@@ -173,7 +173,8 @@ def create_matches(
 def write_batch(match_batch_with_output_dir: tuple) -> None:
     """
     Write a batch of matches to disk
-    :param match_batch: tuple of (a tuple containing a list of jsons containing a merged id and orig id, and an identifier for the batch), and a directory where matches should be written
+    :param match_batch_with_output_dir: tuple of (a tuple containing a list of jsons containing a merged id and orig
+    id, and an identifier for the batch), and a directory where matches should be written
     :return: None
     """
     match_batch, output_dir = match_batch_with_output_dir
