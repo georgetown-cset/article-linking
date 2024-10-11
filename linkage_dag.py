@@ -38,6 +38,7 @@ from dataloader.airflow_utils.defaults import (
     get_default_args,
     get_post_success,
 )
+from dataloader.airflow_utils.utils import clear_gcs_dir
 from dataloader.scripts.populate_documentation import update_table_descriptions
 
 production_dataset = "literature"
@@ -190,6 +191,8 @@ with DAG(
             "fields_to_clean": "title,abstract,last_names",
             "region": "us-east1",
         },
+        on_retry_callback=clear_gcs_dir(DATA_BUCKET, f"{tmp_dir}/cleaned_meta/clean"),
+        on_execute_callback=clear_gcs_dir(DATA_BUCKET, f"{tmp_dir}/cleaned_meta/clean"),
     )
 
     import_clean_metadata = GCSToBigQueryOperator(
@@ -438,6 +441,8 @@ with DAG(
                 table_id="all_metadata_with_cld2_lid",
             )
         ],
+        on_retry_callback=clear_gcs_dir(DATA_BUCKET, f"{tmp_dir}/lid_output/lid"),
+        on_execute_callback=clear_gcs_dir(DATA_BUCKET, f"{tmp_dir}/lid_output/lid"),
     )
 
     # turn off the expensive godzilla of article linkage when we're done with it, then import the id mappings and
