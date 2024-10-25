@@ -3,10 +3,10 @@
 
 At CSET, we aim to produce a more comprehensive set of scholarly literature by ingesting multiple sources and then
 deduplicating articles. This repository contains CSET's current method of cross-dataset article linking. Note that we
-use "article" very loosely, although in a way that to our knowledge is fairly consistent across corpora. Books, for
-example, are included. We currently include articles from arXiv, Web of Science, Papers With Code, Semantic Scholar,
-The Lens, and OpenAlex. Some of these sources are largely duplicative (e.g. arXiv is well covered by other corpora)
-but are included to aid in linking to additional metadata (e.g. arXiv fulltext).
+use "article" very loosely, although in a way that to our knowledge is fairly consistent across the datasets we draw
+from. Books, for example, are included. We currently include articles from arXiv, Web of Science, Papers With Code,
+Semantic Scholar, The Lens, and OpenAlex. Some of these sources are largely duplicative (e.g. arXiv is well covered by
+other corpora) but are included to aid in linking to additional metadata (e.g. arXiv fulltext).
 
 For more information about the overall merged academic corpus, which is produced using several data pipelines including
 article linkage, see the [ETO documentation](https://eto.tech/dataset-docs/mac/).
@@ -67,3 +67,5 @@ The DAG generates two tables of analytic significance:
 * `staging_literature.all_metadata_with_cld2_lid` - captures metadata for all unmerged articles in a
 standard format. It also contains [language ID predictions](utils/run_lid.py) for titles and abstracts based on CLD2.
 * `literature.sources` - contains pairs of merged ids and original (vendor) ids linked to those merged ids.
+
+Metadata _selection_ for each merged article happens in a [downstream DAG](https://github.com/georgetown-cset/cset_article_schema).
