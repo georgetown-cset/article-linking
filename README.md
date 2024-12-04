@@ -4,7 +4,7 @@
 At CSET, we aim to produce a more comprehensive set of scholarly literature by ingesting multiple sources and then
 deduplicating articles. This repository contains CSET's current method of cross-dataset article linking. Note that we
 use "article" very loosely, although in a way that to our knowledge is fairly consistent across the datasets we draw
-from. Books, for example, are included. We currently include articles from arXiv, Web of Science, Papers With Code,
+from. Books, for example, are included. We currently include articles from arXiv, Papers With Code,
 Semantic Scholar, The Lens, and OpenAlex. Some of these sources are largely duplicative (e.g. arXiv is well covered by
 other corpora) but are included to aid in linking to additional metadata (e.g. arXiv fulltext).
 
@@ -15,12 +15,11 @@ article linkage, see the [ETO documentation](https://eto.tech/dataset-docs/mac/)
 
 To match articles, we need to extract the data that we want to use in matching and put it in a consistent format. The
 SQL queries specified in the `sequences/generate_{dataset}_data.tsv` files are run in the order they appear in those
-files. For OpenAlex we exclude documents with a `type` of Dataset, Peer Review, or Grant. Additionally, we take every
-combination of the Web of Science titles, abstracts, and pubyear so that a match on any of these combinations will
-result in a match on the shared WOS id. Finally, for Semantic Scholar, we exclude any documents that have a non-null
+files. For OpenAlex we exclude documents with a `type` of Dataset, Peer Review, or Grant. Finally, for Semantic Scholar,
+we exclude any documents that have a non-null
 publication type that is one of Dataset, Editorial, LettersAndComments, News, or Review.
 
-For each article in arXiv, Web of Science, Papers With Code, Semantic Scholar, The Lens, and OpenAlex
+For each article in arXiv, Papers With Code, Semantic Scholar, The Lens, and OpenAlex
 we [normalized](utils/clean_corpus.py) titles, abstracts, and author last names to remove whitespace, punctuation,
 and other artifacts thought to not be useful for linking. For the purpose of matching, we filtered out titles,
 abstracts, and DOIs that occurred more than 10 times in the corpus. We then considered each group of articles

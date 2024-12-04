@@ -79,7 +79,7 @@ with DAG(
     # standard format
     metadata_sequences_start = []
     metadata_sequences_end = []
-    for dataset in ["arxiv", "wos", "papers_with_code", "openalex", "s2", "lens"]:
+    for dataset in ["arxiv", "papers_with_code", "openalex", "s2", "lens"]:
         ds_commands = []
         query_list = [
             t.strip()
