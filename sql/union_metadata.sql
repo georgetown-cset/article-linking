@@ -15,17 +15,6 @@ WITH meta AS (
     cast(id AS STRING) AS id,
     title,
     abstract,
-    clean_doi,
-    cast(year AS INT64) AS year,
-    last_names,
-    references,
-    "wos" AS dataset
-  FROM {{ staging_dataset }}.wos_metadata
-  UNION ALL
-  SELECT
-    cast(id AS STRING) AS id,
-    title,
-    abstract,
     NULL AS clean_doi,
     cast(year AS INT64) AS year,
     last_names,
