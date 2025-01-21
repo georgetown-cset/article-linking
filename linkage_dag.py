@@ -46,7 +46,7 @@ from dataloader.scripts.populate_documentation import update_table_descriptions
 
 production_dataset = "literature"
 staging_dataset = f"staging_{production_dataset}"
-args = get_default_args(pocs=["Jennifer"])
+args = get_default_args(pocs=["James"])
 args["retries"] = 1
 
 with DAG(
@@ -407,12 +407,12 @@ with DAG(
 
     prep_environment = BashOperator(
         task_id="prep_environment",
-        bash_command=f'gcloud compute ssh jm3312@{gce_resource_id} --zone {GCP_ZONE} --command "{prep_environment_vm_script}"',
+        bash_command=f'gcloud compute ssh airflow@{gce_resource_id} --zone {GCP_ZONE} --command "{prep_environment_vm_script}"',
     )
 
     create_cset_ids = BashOperator(
         task_id="create_cset_ids",
-        bash_command=f'gcloud compute ssh jm3312@{gce_resource_id} --zone {GCP_ZONE} --command "bash run_ids_scripts.sh &> log &"',
+        bash_command=f'gcloud compute ssh airflow@{gce_resource_id} --zone {GCP_ZONE} --command "bash run_ids_scripts.sh &> log &"',
         inlets=[
             BigQueryTable(
                 project_id=project_id, dataset_id=production_dataset, table_id="sources"
