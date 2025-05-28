@@ -59,7 +59,7 @@ always reflect outputs on current metadata for a given merged article regardless
 We automate article linkage using Apache Airflow. `linkage_dag.py` contains our current implementation.
 
 * This dag is triggered from the [Semantic Scholar ETL dag](https://github.com/georgetown-cset/semantic-scholar-etl-pipeline/blob/main/s2_dag.py) which runs once a month.
-* This dag triggers the [Org Fixes dag](https://github.com/georgetown-cset/org-fixes/blob/main/org_fixes_dag.py).
+* This dag triggers the [affiliations dag](https://github.com/georgetown-cset/author-affiliations/blob/main/pipeline/affiliations_dag.py).
 
 The DAG generates two tables of analytic significance:
 

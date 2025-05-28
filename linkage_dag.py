@@ -636,9 +636,9 @@ with DAG(
         python_callable=clean_backups,
     )
     success_alert = get_post_success("Article linkage update succeeded!", dag)
-    trigger_org_fixes = TriggerDagRunOperator(
-        task_id="trigger_org_fixes",
-        trigger_dag_id="org_fixes",
+    trigger_affiliations = TriggerDagRunOperator(
+        task_id="trigger_affiliations",
+        trigger_dag_id="affiliations",
     )
 
     curr_date = datetime.now().strftime("%Y%m%d")
@@ -678,7 +678,7 @@ with DAG(
             >> pop_descriptions
             >> update_archive
             >> success_alert
-            >> trigger_org_fixes
+            >> trigger_affiliations
         )
 
     # We don't show the "all metadata" table in the production dataset, but we do need to
