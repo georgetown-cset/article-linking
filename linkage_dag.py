@@ -46,7 +46,7 @@ from dataloader.scripts.populate_documentation import update_table_descriptions
 
 production_dataset = "literature"
 staging_dataset = f"staging_{production_dataset}"
-args = get_default_args(pocs=["James"])
+args = get_default_args(pocs=["Katherine"])
 args["retries"] = 1
 
 with DAG(
