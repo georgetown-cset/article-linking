@@ -42,13 +42,15 @@ class LangId(beam.DoFn):
                     if encoding is None:
                         encoding = "latin-1"  # last-ditch effort...
                     is_reliable, text_bytes_found, details = cld2.detect(
-                        record[field].encode(encoding, 'surrogatepass').decode(encoding)
+                        record[field].encode(encoding, "surrogatepass").decode(encoding)
                     )
                 except UnicodeDecodeError as e:
-                    logging.warning("utf-8 failed, attempting to get rid of surrogate characters")
+                    logging.warning(
+                        "utf-8 failed, attempting to get rid of surrogate characters"
+                    )
                     logging.warning(e)
                     is_reliable, text_bytes_found, details = cld2.detect(
-                        record[field].encode('utf-8', 'surrogatepass').decode('utf-8')
+                        record[field].encode("utf-8", "surrogatepass").decode("utf-8")
                     )
 
                 record[field + "_cld2_lid_success"] = True

@@ -738,7 +738,7 @@ with DAG(
     gce_instance_start >> gce_instance_stop
 
     gce_instance_create >> run_lid >> gce_instance_delete
-    #run_lid >> gce_instance_stop
+    # run_lid >> gce_instance_stop
 
     (
         gce_instance_delete
