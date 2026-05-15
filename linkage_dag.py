@@ -641,6 +641,11 @@ with DAG(
         trigger_dag_id="affiliations",
     )
 
+    trigger_almanac_classifiers = TriggerDagRunOperator(
+        task_id="trigger_almanac_classifiers",
+        trigger_dag_id="almanac_classifiers",
+    )
+
     curr_date = datetime.now().strftime("%Y%m%d")
     with open(
         f"{os.environ.get('DAGS_FOLDER')}/schemas/{gcs_folder}/table_descriptions.json"
@@ -679,6 +684,7 @@ with DAG(
             >> update_archive
             >> success_alert
             >> trigger_affiliations
+            >> trigger_almanac_classifiers
         )
 
     # We don't show the "all metadata" table in the production dataset, but we do need to
@@ -732,6 +738,7 @@ with DAG(
     gce_instance_start >> gce_instance_stop
 
     gce_instance_create >> run_lid >> gce_instance_delete
+    # run_lid >> gce_instance_stop
 
     (
         gce_instance_delete
