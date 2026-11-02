@@ -395,18 +395,18 @@ with DAG(
     )
 
     prep_environment_script_sequence = [
-        f"/snap/bin/gsutil cp gs://{bucket}/{gcs_folder}/vm_scripts/*.sh .",
+        f"gcloud storage cp gs://{bucket}/{gcs_folder}/vm_scripts/*.sh .",
         "rm -rf run; mkdir run",
         "cd run",
-        f"/snap/bin/gsutil cp gs://{bucket}/{gcs_folder}/vm_scripts/* .",
+        f"gcloud storage cp gs://{bucket}/{gcs_folder}/vm_scripts/* .",
         "rm -rf input_data",
         "rm -rf current_ids",
         "mkdir input_data",
         "mkdir current_ids",
-        f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/exact_matches .",
-        f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/unlink .",
-        f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/ids_to_drop .",
-        f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/prev_id_mapping .",
+        f"gcloud storage cp -r gs://{bucket}/{tmp_dir}/exact_matches .",
+        f"gcloud storage cp -r gs://{bucket}/{tmp_dir}/unlink .",
+        f"gcloud storage cp -r gs://{bucket}/{tmp_dir}/ids_to_drop .",
+        f"gcloud storage cp -r gs://{bucket}/{tmp_dir}/prev_id_mapping .",
     ]
     prep_environment_vm_script = " && ".join(prep_environment_script_sequence)
 
