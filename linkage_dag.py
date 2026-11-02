@@ -476,7 +476,6 @@ with DAG(
     run_lid = BeamRunPythonPipelineOperator(
         py_file=f"{DAGS_DIR}/linkage_scripts/run_lid.py",
         task_id="run_lid",
-
         pipeline_options={
             **dataflow_options,
             "input_loc": f"gs://{bucket}/{tmp_dir}/lid_input/lid_input*",
