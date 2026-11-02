@@ -19,8 +19,9 @@ from airflow.providers.google.cloud.operators.compute import (
     ComputeEngineStopInstanceOperator,
 )
 from airflow.providers.google.cloud.operators.dataflow import (
-    DataflowCreatePythonJobOperator,
+    DataflowConfiguration,
 )
+from airflow.providers.apache.beam.operators.beam import BeamRunPythonPipelineOperator
 from airflow.providers.google.cloud.operators.gcs import GCSDeleteObjectsOperator
 from airflow.providers.google.cloud.sensors.gcs import GCSObjectExistenceSensor
 from airflow.providers.google.cloud.transfers.bigquery_to_bigquery import (
@@ -182,17 +183,21 @@ with DAG(
         "save_main_session": True,
         "requirements_file": f"{DAGS_DIR}/requirements/article_linkage_text_clean_requirements.txt",
     }
-    clean_corpus = DataflowCreatePythonJobOperator(
+    clean_corpus = BeamRunPythonPipelineOperator(
         py_file=f"{DAGS_DIR}/linkage_scripts/clean_corpus.py",
-        job_name="article_linkage_clean_corpus",
         task_id="clean_corpus",
-        dataflow_default_options=dataflow_options,
-        options={
-            "input_dir": f"gs://{bucket}/{tmp_dir}/union_meta/union*",
-            "output_dir": f"gs://{bucket}/{tmp_dir}/cleaned_meta/clean",
+        pipeline_options={
+            **dataflow_options,
+            "input_loc": f"gs://{bucket}/{tmp_dir}/union_meta/union*",
+            "output_loc": f"gs://{bucket}/{tmp_dir}/cleaned_meta/clean",
             "fields_to_clean": "title,abstract,last_names",
-            "region": "us-east1",
         },
+        dataflow_config=DataflowConfiguration(
+            job_name="article_linkage_clean_corpus",
+            location="us-east1",
+            project_id=PROJECT_ID,
+        ),
+
         on_retry_callback=clear_gcs_dir(DATA_BUCKET, f"{tmp_dir}/cleaned_meta/clean"),
         on_execute_callback=clear_gcs_dir(DATA_BUCKET, f"{tmp_dir}/cleaned_meta/clean"),
     )
