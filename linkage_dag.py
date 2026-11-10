@@ -8,6 +8,7 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.python import PythonOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
+from airflow.providers.apache.beam.operators.beam import BeamRunPythonPipelineOperator
 from airflow.providers.google.cloud.operators.bigquery import (
     BigQueryCheckOperator,
     BigQueryInsertJobOperator,
@@ -18,9 +19,7 @@ from airflow.providers.google.cloud.operators.compute import (
     ComputeEngineStartInstanceOperator,
     ComputeEngineStopInstanceOperator,
 )
-from airflow.providers.google.cloud.operators.dataflow import (
-    DataflowCreatePythonJobOperator,
-)
+from airflow.providers.google.cloud.operators.dataflow import DataflowConfiguration
 from airflow.providers.google.cloud.operators.gcs import GCSDeleteObjectsOperator
 from airflow.providers.google.cloud.sensors.gcs import GCSObjectExistenceSensor
 from airflow.providers.google.cloud.transfers.bigquery_to_bigquery import (
@@ -182,17 +181,20 @@ with DAG(
         "save_main_session": True,
         "requirements_file": f"{DAGS_DIR}/requirements/article_linkage_text_clean_requirements.txt",
     }
-    clean_corpus = DataflowCreatePythonJobOperator(
+    clean_corpus = BeamRunPythonPipelineOperator(
         py_file=f"{DAGS_DIR}/linkage_scripts/clean_corpus.py",
-        job_name="article_linkage_clean_corpus",
         task_id="clean_corpus",
-        dataflow_default_options=dataflow_options,
-        options={
-            "input_dir": f"gs://{bucket}/{tmp_dir}/union_meta/union*",
-            "output_dir": f"gs://{bucket}/{tmp_dir}/cleaned_meta/clean",
+        pipeline_options={
+            **dataflow_options,
+            "input_loc": f"gs://{bucket}/{tmp_dir}/union_meta/union*",
+            "output_loc": f"gs://{bucket}/{tmp_dir}/cleaned_meta/clean",
             "fields_to_clean": "title,abstract,last_names",
-            "region": "us-east1",
         },
+        dataflow_config=DataflowConfiguration(
+            job_name="article_linkage_clean_corpus",
+            location="us-east1",
+            project_id=PROJECT_ID,
+        ),
         on_retry_callback=clear_gcs_dir(DATA_BUCKET, f"{tmp_dir}/cleaned_meta/clean"),
         on_execute_callback=clear_gcs_dir(DATA_BUCKET, f"{tmp_dir}/cleaned_meta/clean"),
     )
@@ -390,18 +392,18 @@ with DAG(
     )
 
     prep_environment_script_sequence = [
-        f"/snap/bin/gsutil cp gs://{bucket}/{gcs_folder}/vm_scripts/*.sh .",
+        f"gcloud storage cp gs://{bucket}/{gcs_folder}/vm_scripts/*.sh .",
         "rm -rf run; mkdir run",
         "cd run",
-        f"/snap/bin/gsutil cp gs://{bucket}/{gcs_folder}/vm_scripts/* .",
+        f"gcloud storage cp gs://{bucket}/{gcs_folder}/vm_scripts/* .",
         "rm -rf input_data",
         "rm -rf current_ids",
         "mkdir input_data",
         "mkdir current_ids",
-        f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/exact_matches .",
-        f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/unlink .",
-        f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/ids_to_drop .",
-        f"/snap/bin/gsutil -m cp -r gs://{bucket}/{tmp_dir}/prev_id_mapping .",
+        f"gcloud storage cp -r gs://{bucket}/{tmp_dir}/exact_matches .",
+        f"gcloud storage cp -r gs://{bucket}/{tmp_dir}/unlink .",
+        f"gcloud storage cp -r gs://{bucket}/{tmp_dir}/ids_to_drop .",
+        f"gcloud storage cp -r gs://{bucket}/{tmp_dir}/prev_id_mapping .",
     ]
     prep_environment_vm_script = " && ".join(prep_environment_script_sequence)
 
@@ -471,17 +473,20 @@ with DAG(
         "save_main_session": True,
         "requirements_file": f"{DAGS_DIR}/requirements/article_linkage_lid_dataflow_requirements.txt",
     }
-    run_lid = DataflowCreatePythonJobOperator(
+    run_lid = BeamRunPythonPipelineOperator(
         py_file=f"{DAGS_DIR}/linkage_scripts/run_lid.py",
-        job_name="article_linkage_lid",
         task_id="run_lid",
-        dataflow_default_options=lid_dataflow_options,
-        options={
-            "input_dir": f"gs://{bucket}/{tmp_dir}/lid_input/lid_input*",
-            "output_dir": f"gs://{bucket}/{tmp_dir}/lid_output/lid",
+        pipeline_options={
+            **lid_dataflow_options,
+            "input_loc": f"gs://{bucket}/{tmp_dir}/lid_input/lid_input*",
+            "output_loc": f"gs://{bucket}/{tmp_dir}/lid_output/lid",
             "fields_to_lid": "title,abstract",
-            "region": "us-east1",
         },
+        dataflow_config=DataflowConfiguration(
+            job_name="article_linkage_lid",
+            location="us-east1",
+            project_id=PROJECT_ID,
+        ),
         inlets=[
             BigQueryTable(
                 project_id=project_id, dataset_id=staging_dataset, table_id="lid_input"
