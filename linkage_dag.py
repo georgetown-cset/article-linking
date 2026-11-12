@@ -641,15 +641,15 @@ with DAG(
         python_callable=clean_backups,
     )
     success_alert = get_post_success("Article linkage update succeeded!", dag)
-    trigger_affiliations = TriggerDagRunOperator(
-        task_id="trigger_affiliations",
-        trigger_dag_id="affiliations",
-    )
+    #trigger_affiliations = TriggerDagRunOperator(
+    #    task_id="trigger_affiliations",
+    #    trigger_dag_id="affiliations",
+    #)
 
-    trigger_almanac_classifiers = TriggerDagRunOperator(
-        task_id="trigger_almanac_classifiers",
-        trigger_dag_id="almanac_classifiers",
-    )
+    #trigger_almanac_classifiers = TriggerDagRunOperator(
+    #    task_id="trigger_almanac_classifiers",
+    #    trigger_dag_id="almanac_classifiers",
+    #)
 
     curr_date = datetime.now().strftime("%Y%m%d")
     with open(
@@ -688,8 +688,8 @@ with DAG(
             >> pop_descriptions
             >> update_archive
             >> success_alert
-            >> trigger_affiliations
-            >> trigger_almanac_classifiers
+            #>> trigger_affiliations
+            #>> trigger_almanac_classifiers
         )
 
     # We don't show the "all metadata" table in the production dataset, but we do need to
